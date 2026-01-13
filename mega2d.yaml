@@ -1,0 +1,36 @@
+LayerViews:
+  DUMMY:
+    layer: [0, 0]
+    color: "black"
+    visible: false
+  DEVICE:
+    layer: [1, 0]
+    hatch_pattern: solid
+    width: 1
+    color: "#007EFF"
+  DEVICE_REMOVE:
+    layer: [2, 0]
+    hatch_pattern: solid
+    color: "#FFEEFF"
+  HANDLE_REMOVE:
+    layer: [12, 0]
+    layer_in_name: true
+    hatch_pattern: left-hatched
+    width: 1
+    color: "#F3347E"
+  HANDLE_STEP_ETCH:
+    layer: [13, 0]
+    layer_in_name: true
+    hatch_pattern: coarsely right-hatched
+    width: 1
+    color: "#00A3EF"
+  VIAS_ETCH:
+    layer: [21, 0]
+    layer_in_name: true
+    hatch_pattern: solid
+    color: "#FF7F00"
+  TIP:
+    layer: [22, 0]
+    layer_in_name: true
+    hatch_pattern: strongly right-hatched dense
+    color: "#FF00FF"
