@@ -17,7 +17,7 @@ CHIP_BORDER_WIDTH = 200
 
 ANGLE_RESOLUTION = 0.5
 CAVITY_WIDTH = 50
-DEVICE_ISOLATION = 5
+DEVICE_ISOLATION = 7
 ELEC_ROUTING_WIDTH = 70
 
 RELEASE_SPEC = gl.datatypes.ReleaseSpec(
@@ -191,8 +191,20 @@ ZCANT_BEAM_STOPPER_OUTER_POS = (ZCANT_BEAM_STOPPER_OUTER_WIDTH / 2, 0.6)
 WIRE_BOND_SIZE = 400
 WIRE_BOND_OFFSET = 300
 WIRE_BOND_POS = [-1200, -150, 500, 1500, 2400]
+WIRE_BOND_GROUNDED_INDICES = [3]
 
-
+LABEL_REGION_SIZE = (500, 600)
+LABEL_TEXT_SIZE = 70
+LABEL_POSITION = (-2500, 1850)
+LABELS = {
+    220: "MEGA-2D",
+    100: "Cao Lab",
+    20: "EECS",
+    -60: "Berkeley",
+    -140: "",
+    -210: "Ver 0.9",
+    -290: "ZRLock",
+}
 VIA_RADIUS = 20
 VIA_DEVICE_CLEARANCE = 25
 VIA_HANDLE_CLEARANCE = 30
@@ -619,6 +631,7 @@ def electrical_interconnect() -> gf.Component:
     )
 
     # Overrides on DEVICE layer to make connections complete
+    # Connect left C phase with middle crossing
     c << gl.basic.ring(
         radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS,
@@ -627,6 +640,7 @@ def electrical_interconnect() -> gf.Component:
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
+    # Connect right A phase with middle crossing
     c << gl.basic.ring(
         radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS,
@@ -635,6 +649,7 @@ def electrical_interconnect() -> gf.Component:
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
+    # Connect right C phase routing with middle crossing
     c << gl.basic.ring(
         radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
@@ -643,8 +658,9 @@ def electrical_interconnect() -> gf.Component:
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
+    # Connect left A phase routing with middle crossing
     c << gl.basic.ring(
-        radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION,
+        radius_inner=via1_radius + ELEC_ROUTING_WIDTH / 2 + DEVICE_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
         angles=(-100, -93),
         geometry_layer=LAYERS.DEVICE,
@@ -652,6 +668,7 @@ def electrical_interconnect() -> gf.Component:
         release_spec=None,
     )
 
+    # Connect left A and right C phases routing with their drives
     conn = gl.basic.ring(
         radius_inner=RDRIVE_OUTER_RADIUS
         - gl.utils.sagitta_offset_safe(
@@ -673,6 +690,43 @@ def electrical_interconnect() -> gf.Component:
     )
     (c << conn)
     (c << conn).mirror_x()
+
+    # Connect A and C phase to zcant
+    p1 = (
+        (RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + 0.5 * ELEC_ROUTING_WIDTH),
+        ELEC_ROUTING_WIDTH,
+    )
+    p2 = (
+        ZCANT_POSITION - ELEC_ROUTING_WIDTH * 0.5 - ZCANT_CLEARANCE,
+        -ZCANT_WIDTH / 2 - ZCANT_BEAM_MAIN_LENGTH,
+    )
+    pmid = (p2[0], p1[1])
+    path = gf.path.smooth(
+        points=np.array([p1, pmid, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P6, width=ELEC_ROUTING_WIDTH))
+    (c << path.extrude(layer=LAYERS.DEVICE_P6, width=ELEC_ROUTING_WIDTH)).mirror_x()
+
+    # Connect B phase to zcant
+    p1 = (
+        ZCANT_WIDTH / 2 + ZCANT_BEAM_MAIN_LENGTH + ZCANT_ANCHOR_SIZE[1] / 2,
+        -ZCANT_POSITION,
+    )
+    p2 = (p1[0], -(ZSTAGE_OUTER_RADIUS - ELEC_ROUTING_WIDTH))
+    path = gf.path.smooth(
+        points=np.array([p1, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P5, width=ELEC_ROUTING_WIDTH))
+
+    # Connect zcant to ground
+    (c << via(LAYERS.DEVICE_P3)).move((-p1[0], p1[1]))
+
+    # Connect ground to RDrive
+    (c << via(LAYERS.DEVICE_P3)).move(
+        (0, -0.5 * (RFLEX_ANCHOR_RADIUS0 + RFLEX_ANCHOR_RADIUS1))
+    )
 
     return c
 
@@ -770,7 +824,7 @@ def z_cant() -> gf.Component:
 
     anchor1 = gf.Component()
     anchor1 << gf.components.rectangle(
-        size=ZCANT_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=True
+        size=ZCANT_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3_NOISO, centered=True
     )
     anchor1.move(
         (
@@ -1126,10 +1180,42 @@ def bonding_pads() -> gf.Component:
         centered=True,
         layer=LAYERS.DEVICE_P3,
     )
+    v = via(LAYERS.DEVICE_P3)
 
-    for x in WIRE_BOND_POS:
+    for i, x in enumerate(WIRE_BOND_POS):
         (c << pad).move((x, -CHIP_SIZE / 2 + WIRE_BOND_SIZE / 2 + WIRE_BOND_OFFSET))
 
+        if i in WIRE_BOND_GROUNDED_INDICES:
+            for dx in [-0.25, 0.25]:
+                for dy in [-0.25, 0.25]:
+                    (c << v).move(
+                        (
+                            x + dx * WIRE_BOND_SIZE,
+                            -CHIP_SIZE / 2
+                            + WIRE_BOND_SIZE / 2
+                            + WIRE_BOND_OFFSET
+                            + dy * WIRE_BOND_SIZE,
+                        )
+                    )
+
+    return c
+
+
+def chip_label():
+    c = gf.Component()
+
+    c << gf.components.rectangle(
+        size=LABEL_REGION_SIZE, centered=True, layer=LAYERS.DEVICE_P3
+    )
+
+    for ypos, text in LABELS.items():
+        c << gf.components.text(
+            text=text,
+            size=LABEL_TEXT_SIZE,
+            position=(0, ypos),
+            justify="center",
+            layer=LAYERS.DEVICE_REMOVE,
+        )
     return c
 
 
@@ -1175,5 +1261,8 @@ def device(text: str) -> gf.Component:
         (c << zact).rotate(angle)
         (c << zcl).rotate(angle)
         (c << pad).rotate(angle)
+
+    label = c << chip_label()
+    label.move(LABEL_POSITION)
 
     return c

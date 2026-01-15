@@ -14,6 +14,16 @@ class LAYERS(gf.technology.LayerMap):
     DEVICE_P7: gf.typings.Layer = (3, 7)  # Lowest priority (back)
     DEVICE_REMOVE: gf.typings.Layer = (2, 0)
 
+    # No isolation
+    DEVICE_P0_NOISO: gf.typings.Layer = (3, 10)  # Highest priority (front)
+    DEVICE_P1_NOISO: gf.typings.Layer = (3, 11)
+    DEVICE_P2_NOISO: gf.typings.Layer = (3, 12)
+    DEVICE_P3_NOISO: gf.typings.Layer = (3, 13)
+    DEVICE_P4_NOISO: gf.typings.Layer = (3, 14)
+    DEVICE_P5_NOISO: gf.typings.Layer = (3, 15)
+    DEVICE_P6_NOISO: gf.typings.Layer = (3, 16)
+    DEVICE_P7_NOISO: gf.typings.Layer = (3, 17)  # Lowest priority (back)
+
     HANDLE_P0: gf.typings.Layer = (11, 0)  # Highest priority (front)
     HANDLE_P1: gf.typings.Layer = (11, 1)
     HANDLE_P2: gf.typings.Layer = (11, 2)

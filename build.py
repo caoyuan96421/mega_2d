@@ -116,6 +116,16 @@ for i in range(7, -1, -1):
         layer2=LAYERS.DUMMY,
     )
 
+    # Merge NoISO layer
+    dev = gf.boolean(
+        A=dev,
+        B=d,
+        operation="|",
+        layer=LAYERS.DEVICE,
+        layer1=LAYERS.DEVICE,
+        layer2=(LAYERS.DEVICE_P0[0], i + 10),
+    )
+
 # Pattern in layer DEVICE is always present in final design
 dev = gf.boolean(
     A=dev,
