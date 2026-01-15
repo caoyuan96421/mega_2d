@@ -18,7 +18,7 @@ CHIP_BORDER_WIDTH = 200
 ANGLE_RESOLUTION = 0.5
 CAVITY_WIDTH = 50
 DEVICE_ISOLATION = 5
-ELEC_ROUTING_WIDTH = 50
+ELEC_ROUTING_WIDTH = 70
 
 RELEASE_SPEC = gl.datatypes.ReleaseSpec(
     hole_radius=3,
@@ -74,7 +74,8 @@ RSENSOR_COMB_COUNT = int(
 RSENSOR_COMB_OVERLAP = 19
 
 R_CONNECTOR_CLEARANCE = 10  # Mechanical clearance
-R_CONNECTOR_ISOLATION = 5  # Electrical isolatioin distance
+
+RINTERCONN_VIAS_ANGLE = 0
 
 RSTOPPER_ANGLE = 45
 RSTOPPER_SPAN = 3
@@ -84,54 +85,118 @@ RANCHOR_ANGLE = RFLEX_BEAM_ANGLES[0] + 0.5 * RFLEX_BEAM_WIDTH / RFLEX_ANCHOR_RAD
     np.pi / 180
 )
 
-# ZDRIVE_CLEARANCE = 8
-# ZDRIVE_INNER_RADIUS = 2250
-ZDRIVE_OUTER_RADIUS = 1280
-# ZDRIVE_RING_SPAN = 60
-# ZDRIVE_ANCHOR_SIZE = 120
+ZSTAGE_OUTER_RADIUS = 1280
+ZSTAGE_EXTENSION = (760, 150)
 
 Z_RELEASE_LOCK_SPAN = (40, 50)
 
-ZCANT_WIDTH = 600
-ZCANT_LENGTH1 = 600
-ZCANT_LENGTH2 = 100
-ZCANT_BEAM0_WIDTH = 5
-ZCANT_BEAM0_LENGTH = 100
-ZCANT_BEAM1_WIDTH = 5
-ZCANT_BEAM1_LENGTH = 100
-ZCANT_BEAM2_WIDTH = 4
-ZCANT_BEAM2_LENGTH = 150
-ZCANT_BEAM2_INSET = 230
-ZCANT_STUB_WIDTH = 40
-ZCANT_STUB_INSET = 70
-ZCANT_STUB_ANCHOR_SIZE = 250
+ZCANT_CLEARANCE = 8
+ZCANT_WIDTH = 400
+ZCANT_LENGTH = 600
+ZCANT_POSITION = ZSTAGE_OUTER_RADIUS + ZSTAGE_EXTENSION[1] + CAVITY_WIDTH - 120
+
+ZCANT_BEAM_MAIN_WIDTH = 8
+ZCANT_BEAM_MAIN_LENGTH = 80
+
+
+ZCANT_BEAM_DRIVE_WIDTH = 4
+ZCANT_BEAM_DRIVE_LENGTH = 100
+ZCANT_BEAM_DRIVE_FRACTION = 0.8  # Controls lever ratio
+
+
+ZCANT_ANCHOR_SIZE = (100, 100)
+
+ZCLAMP_WIDTH = 100
+ZCLAMP_LENGTH1 = 280
+ZCLAMP_LENGTH2 = 840
+
+ZCLAMP_BEAM_WIDTH = 4
+ZCLAMP_BEAM_LENGTH = 50
+ZCLAMP_ANCHOR_SIZE = (100, 100)
+ZCLAMP_BEAM_POS = [0, 1]
+
+ZCLAMP_POS = (
+    ZCANT_POSITION
+    - ZCANT_ANCHOR_SIZE[0] / 2
+    - ZCLAMP_ANCHOR_SIZE[0] / 2
+    - ZCANT_CLEARANCE,
+    -(
+        ZCANT_WIDTH / 2
+        + ZCANT_BEAM_MAIN_LENGTH
+        + ZCANT_ANCHOR_SIZE[1]
+        + ZCLAMP_BEAM_LENGTH
+        + ZCLAMP_WIDTH
+    ),
+)
+
+ZCLAMP_PFLEX_BEAM_WIDTH = 5
+ZCLAMP_PFLEX_BEAM_LENGTH = 600
+ZCLAMP_PFLEX_BAR_WIDTH = 50
+ZCLAMP_PFLEX_BAR_LENGTH = 490
+ZCLAMP_PFLEX_STROKE = 25
+ZCLAMP_PFLEX_BEAM_POS = [0, 0.08, 0.92, 1]
+ZCLAMP_PFLEX_ANCHOR_SIZE = (100, 100)
+ZCLAMP_PFLEX_POS = (
+    ZCLAMP_POS[0] + ZCLAMP_PFLEX_BEAM_LENGTH + 150,
+    ZCLAMP_POS[1]
+    - ZCLAMP_PFLEX_BAR_LENGTH / 2
+    - CAVITY_WIDTH
+    - ZCLAMP_PFLEX_ANCHOR_SIZE[1],
+)
+ZCLAMP_PFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
+    release_thick=True,
+    thick_length=(0, 0.7),
+    thick_width=(18, 0),
+    thick_offset=(0, 0),
+)
+ZCLAMP_PECK_OVERLAP = 15
+ZCLAMP_PECK_WIDTH = 50
+ZCLAMP_CARRIAGE_WIDTH = 33
+ZCLAMP_CARRIAGE_SPACING = 30
+
+ZCLAMP_COMB_GAP = 3.5
+ZCLAMP_COMB_WIDTH = 4
+ZCLAMP_COMB_COUNT = 110
+ZCLAMP_COMB_HEIGHT = 70
+ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_HEIGHT - 10 - 2 * ZCLAMP_PFLEX_STROKE
+ZCLAMP_COMB_ANCHOR_WIDTH = 25
 
 Z_CANT_BEAM_SPEC = None
 
-ZACTUATOR_WIDTH = 2800
-ZACTUATOR_LENGTH = 700
-ZACTUATOR_LENGTH_STEP = 5
+ZACTUATOR_SIZE = (900, 1700)
+ZACTUATOR_POS = (1280, 480)
+ZACTUATOR_ANCHOR_SIZE = (100, 100)
+ZACTUATOR_BEAM_LENGTH = 50
 ZACTUATOR_BEAM_WIDTH = 4
-ZACTUATOR_BEAM_LENGTH = 40
+ZACTUATOR_CONN_WIDTH = 300
 
-ZR_CONNECTOR_SPANS = [
-    (-30, -25),
-    (15, 20),
-    (60, 65),
-]
+ZCANT_BEAM_STOPPER_INNER_WIDTH = 75
+ZCANT_BEAM_STOPPER_INNER_INSET = (75, 0)
+ZCANT_BEAM_STOPPER_INNER_LENGTH = (
+    ZCANT_BEAM_STOPPER_INNER_INSET[0]
+    - ZCLAMP_POS[1]
+    - ZCLAMP_WIDTH
+    - ZCANT_WIDTH / 2
+    - ZCLAMP_BEAM_LENGTH
+    - ZCLAMP_ANCHOR_SIZE[1]
+)
+ZCANT_BEAM_STOPPER_INNER_POS = (ZCLAMP_POS[0] + ZCLAMP_LENGTH1 - ZCANT_POSITION, 0)
 
-WIRE_BOND_SIZE = 300
-WIRE_BOND_OFFSET = 100
 
-# CHIP_BOND_RADIUS = 2600
-# CHIP_BOND_SPAN = 60
-# CHIP_BOND_MARKER_SIZE = 100
+ZCANT_BEAM_STOPPER_OUTER_WIDTH = 50
+ZCANT_BEAM_STOPPER_OUTER_INSET = (0, 0.4)
+ZCANT_BEAM_STOPPER_OUTER_LENGTH = CAVITY_WIDTH + 50
+ZCANT_BEAM_STOPPER_OUTER_POS = (ZCANT_BEAM_STOPPER_OUTER_WIDTH / 2, 0.6)
+
+WIRE_BOND_SIZE = 400
+WIRE_BOND_OFFSET = 300
+WIRE_BOND_POS = [-1200, -150, 500, 1500, 2400]
 
 
 VIA_RADIUS = 20
-VIA_DEVICE_CLEARANCE = DEVICE_ISOLATION
+VIA_DEVICE_CLEARANCE = 25
 VIA_HANDLE_CLEARANCE = 30
-VIA_VIA_CLEARANCE = 75
+VIA_VIA_CLEARANCE = 2 * (VIA_RADIUS + VIA_DEVICE_CLEARANCE) + 20
 
 via = lambda layer: gl.basic.via(
     radius_first=VIA_RADIUS,
@@ -348,7 +413,7 @@ def r_connectors_half() -> gf.Component:
     # Electrical Isolation
     _ = c << gl.basic.ring(
         radius_inner=RFLEX_ANCHOR_RADIUS1,
-        radius_outer=RFLEX_ANCHOR_RADIUS1 + R_CONNECTOR_ISOLATION,
+        radius_outer=RFLEX_ANCHOR_RADIUS1 + DEVICE_ISOLATION,
         angles=(0, RSENSOR_START_ANGLE),
         geometry_layer=LAYERS.DEVICE_REMOVE,
         angle_resolution=ANGLE_RESOLUTION,
@@ -356,7 +421,7 @@ def r_connectors_half() -> gf.Component:
     )
 
     _ = c << gl.basic.ring(
-        radius_inner=RFLEX_ANCHOR_RADIUS0 - R_CONNECTOR_ISOLATION,
+        radius_inner=RFLEX_ANCHOR_RADIUS0 - DEVICE_ISOLATION,
         radius_outer=RFLEX_ANCHOR_RADIUS0,
         angles=(-RFLEX_BEAM_ANGLES[0] * 0.75, 0),
         geometry_layer=LAYERS.DEVICE_REMOVE,
@@ -366,8 +431,8 @@ def r_connectors_half() -> gf.Component:
 
     hor_iso = c << gf.components.rectangle(
         size=(
-            RFLEX_ANCHOR_RADIUS1 - RFLEX_ANCHOR_RADIUS0 + 2 * R_CONNECTOR_ISOLATION,
-            R_CONNECTOR_ISOLATION,
+            RFLEX_ANCHOR_RADIUS1 - RFLEX_ANCHOR_RADIUS0 + 2 * DEVICE_ISOLATION,
+            DEVICE_ISOLATION,
         ),
         layer=LAYERS.DEVICE_REMOVE,
         centered=True,
@@ -377,7 +442,7 @@ def r_connectors_half() -> gf.Component:
     # Intermediate stage handle ring
     _ = c << gl.basic.ring(
         radius_inner=RDRIVE_MID_RADIUS + 0.5 * CAVITY_WIDTH,
-        radius_outer=ZDRIVE_OUTER_RADIUS,
+        radius_outer=ZSTAGE_OUTER_RADIUS,
         angles=(-90, 90),
         geometry_layer=LAYERS.HANDLE_P1,
         angle_resolution=ANGLE_RESOLUTION,
@@ -487,20 +552,14 @@ def electrical_interconnect() -> gf.Component:
     cross = crossing(
         radius=handle_rounded_radius,
         separation=VIA_VIA_CLEARANCE,
-        layer1=LAYERS.DEVICE_P5,
+        layer1=LAYERS.DEVICE_P3,
         layer2=LAYERS.DEVICE_P5,
         layer_handle=LAYERS.HANDLE_P0,
     )
-    # (
-    #     c
-    #     << gf.components.rectangle(
-    #         size=(10, 100), centered=True, layer=LAYERS.DEVICE_P0
-    #     )
-    # ).move((x_center, 0))
 
     c = gf.Component()
 
-    for angle in [0, -180]:
+    for angle in [RINTERCONN_VIAS_ANGLE, -180 - RINTERCONN_VIAS_ANGLE]:
         (c << cross).movex(x_center).rotate(angle)
 
     cross_mid = crossing(
@@ -532,10 +591,8 @@ def electrical_interconnect() -> gf.Component:
 
     c << gl.basic.ring(
         radius_inner=RDRIVE_OUTER_RADIUS + 2 * DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
-        radius_outer=RDRIVE_OUTER_RADIUS
-        + 2 * DEVICE_ISOLATION
-        + 2 * ELEC_ROUTING_WIDTH,
-        angles=(-181, 1),
+        radius_outer=ZSTAGE_OUTER_RADIUS,
+        angles=(-180 - RINTERCONN_VIAS_ANGLE - 1, RINTERCONN_VIAS_ANGLE + 1),
         geometry_layer=LAYERS.DEVICE_P5,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
@@ -555,7 +612,7 @@ def electrical_interconnect() -> gf.Component:
     c << gl.basic.ring(
         radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
-        angles=(-93, -87),
+        angles=(-94, -86),
         geometry_layer=LAYERS.DEVICE_P6,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
@@ -621,6 +678,462 @@ def electrical_interconnect() -> gf.Component:
 
 
 @static_cell
+def z_cant() -> gf.Component:
+    c = gf.Component()
+
+    # ZStage extension
+    ext = c << gf.components.rectangle(
+        size=(ZSTAGE_EXTENSION[0], 2 * ZSTAGE_EXTENSION[1]),
+        layer=LAYERS.HANDLE_P1,
+        centered=True,
+    )
+    ext.movey(ZSTAGE_OUTER_RADIUS)
+
+    # Z cantilever
+
+    beam_main_0 = gl.flexure.ZCantileverBeam(
+        length=ZCANT_BEAM_MAIN_LENGTH,
+        width=ZCANT_BEAM_MAIN_WIDTH,
+        position=(-0.5 * ZCANT_BEAM_MAIN_WIDTH, 1.0),
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(0, 0),
+        isolation_y=(0, 0),
+        spec=Z_CANT_BEAM_SPEC,
+    )
+
+    beam_main_1 = gl.flexure.ZCantileverBeam(
+        length=ZCANT_BEAM_MAIN_LENGTH,
+        width=ZCANT_BEAM_MAIN_WIDTH,
+        position=(0.5 * ZCANT_BEAM_MAIN_WIDTH, 0.0),
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(0, 0),
+        isolation_y=(0, 0),
+        spec=Z_CANT_BEAM_SPEC,
+    )
+
+    beam_drive = gl.flexure.ZCantileverBeam(
+        length=ZCANT_BEAM_DRIVE_LENGTH,
+        width=ZCANT_BEAM_DRIVE_WIDTH,
+        position=(0, ZCANT_BEAM_DRIVE_FRACTION),
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(0, 1 - ZCANT_BEAM_DRIVE_FRACTION),
+        isolation_y=(0, 0.25),
+        spec=Z_CANT_BEAM_SPEC,
+    )
+
+    beam_stopper_inner = gl.flexure.ZCantileverBeam(
+        length=ZCANT_BEAM_STOPPER_INNER_LENGTH,
+        width=ZCANT_BEAM_STOPPER_INNER_WIDTH,
+        position=ZCANT_BEAM_STOPPER_INNER_POS,
+        inset_x=(ZCANT_BEAM_STOPPER_INNER_WIDTH, 0),
+        inset_y=ZCANT_BEAM_STOPPER_INNER_INSET,
+        isolation_x=(ZCANT_BEAM_STOPPER_INNER_WIDTH, 0),
+        isolation_y=ZCANT_BEAM_STOPPER_INNER_INSET,
+        spec=gl.datatypes.BeamSpec(release_thin=True),
+    )
+
+    beam_stopper_outer = gl.flexure.ZCantileverBeam(
+        length=ZCANT_BEAM_STOPPER_OUTER_LENGTH,
+        width=ZCANT_BEAM_STOPPER_OUTER_WIDTH,
+        position=ZCANT_BEAM_STOPPER_OUTER_POS,
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(ZCANT_BEAM_STOPPER_OUTER_WIDTH, 0),
+        isolation_y=ZCANT_BEAM_STOPPER_OUTER_INSET,
+        spec=gl.datatypes.BeamSpec(release_thin=True),
+    )
+
+    zcant_half_drive = gl.flexure.z_cantilever_half(
+        length=ZCANT_LENGTH,
+        width=ZCANT_WIDTH,
+        beams=[beam_main_0, beam_main_1, beam_drive],
+        clearance=ZCANT_CLEARANCE,
+        middle_split=True,
+        geometry_layer=LAYERS.DEVICE_P3,
+        handle_layer=LAYERS.HANDLE_P0,
+        release_spec=Z_CANT_BEAM_SPEC,
+    )
+
+    zcant_half_nodrive = gl.flexure.z_cantilever_half(
+        length=ZCANT_LENGTH,
+        width=ZCANT_WIDTH,
+        beams=[beam_main_0, beam_main_1, beam_stopper_inner, beam_stopper_outer],
+        clearance=ZCANT_CLEARANCE,
+        middle_split=True,
+        geometry_layer=LAYERS.DEVICE_P3,
+        handle_layer=LAYERS.HANDLE_P0,
+        release_spec=RELEASE_SPEC,
+    )
+
+    anchor1 = gf.Component()
+    anchor1 << gf.components.rectangle(
+        size=ZCANT_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=True
+    )
+    anchor1.move(
+        (
+            ZCANT_POSITION,
+            ZCANT_WIDTH / 2 + ZCANT_BEAM_MAIN_LENGTH + ZCANT_ANCHOR_SIZE[1] / 2,
+        )
+    )
+
+    (c << zcant_half_drive).movex(ZCANT_POSITION)
+    (c << zcant_half_nodrive).mirror_y().movex(ZCANT_POSITION)
+    (c << anchor1)
+    (c << anchor1).mirror_y()
+    (c << anchor1).movex(ZCANT_LENGTH)
+    (c << anchor1).movex(ZCANT_LENGTH).mirror_y()
+
+    return c
+
+
+@static_cell
+def z_actuator() -> gf.Component:
+    c = gf.Component()
+
+    z_act = c << gl.basic.rectangle(
+        size=ZACTUATOR_SIZE,
+        geometry_layer=LAYERS.DEVICE_P3,
+        centered=False,
+        release_spec=RELEASE_SPEC,
+    )
+
+    z_act.move(ZACTUATOR_POS)
+
+    z_act_conn = c << gl.basic.rectangle(
+        size=(
+            ZACTUATOR_CONN_WIDTH,
+            ZACTUATOR_POS[1] - ZCANT_WIDTH / 2 - ZCANT_BEAM_DRIVE_LENGTH,
+        ),
+        geometry_layer=LAYERS.DEVICE_P3,
+        centered=False,
+        release_spec=RELEASE_SPEC,
+    )
+
+    z_act_conn.move(
+        (
+            ZACTUATOR_POS[0] + (ZACTUATOR_SIZE[0] - ZACTUATOR_CONN_WIDTH) / 2,
+            ZCANT_WIDTH / 2 + ZCANT_BEAM_DRIVE_LENGTH,
+        )
+    )
+
+    anchor3 = gf.Component()
+    beam = anchor3 << gl.flexure.beam(
+        length=ZACTUATOR_BEAM_LENGTH,
+        width=ZACTUATOR_BEAM_WIDTH,
+        geometry_layer=LAYERS.DEVICE_P3,
+        beam_spec=None,
+        release_spec=None,
+    )
+    square = anchor3 << gf.components.rectangle(
+        size=ZACTUATOR_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=True
+    )
+    beam.move(
+        (
+            ZACTUATOR_POS[0] - ZACTUATOR_BEAM_LENGTH / 2,
+            ZACTUATOR_POS[1] + ZACTUATOR_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+        )
+    )
+    square.move(
+        (
+            ZACTUATOR_POS[0] - ZACTUATOR_BEAM_LENGTH - ZACTUATOR_ANCHOR_SIZE[0] / 2,
+            ZACTUATOR_POS[1] + ZACTUATOR_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+        )
+    )
+
+    (c << anchor3)
+    (c << anchor3).mirror_x(ZACTUATOR_SIZE[0] / 2 + ZACTUATOR_POS[0])
+
+    return c
+
+
+@static_cell
+def z_clamp() -> gf.Component:
+    c = gf.Component()
+
+    # Z clamp lever
+
+    beam0 = gl.flexure.ZCantileverBeam(
+        length=ZCLAMP_BEAM_LENGTH,
+        width=ZCLAMP_BEAM_WIDTH,
+        position=(0.5 * ZCLAMP_BEAM_WIDTH, ZCLAMP_BEAM_POS[0]),
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(0, 0),
+        isolation_y=(0, 0),
+        spec=Z_CANT_BEAM_SPEC,
+    )
+
+    beam1 = gl.flexure.ZCantileverBeam(
+        length=ZCLAMP_BEAM_LENGTH,
+        width=ZCLAMP_BEAM_WIDTH,
+        position=(-0.5 * ZCLAMP_BEAM_WIDTH, ZCLAMP_BEAM_POS[1]),
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(0, 0),
+        isolation_y=(0, 0),
+        spec=Z_CANT_BEAM_SPEC,
+    )
+
+    beam2 = gl.flexure.ZCantileverBeam(
+        length=ZCLAMP_BEAM_LENGTH,
+        width=ZCLAMP_BEAM_WIDTH,
+        position=(-0.5 * ZCLAMP_BEAM_WIDTH, ZCLAMP_BEAM_POS[1]),
+        inset_x=(0, 0),
+        inset_y=(0, 0),
+        isolation_x=(0, 0),
+        isolation_y=(0, 0),
+        spec=Z_CANT_BEAM_SPEC,
+        flip_side=True,
+    )
+
+    zclamp_lever = gl.flexure.z_cantilever_asymm(
+        length=ZCLAMP_LENGTH1,
+        width=ZCLAMP_WIDTH,
+        beams=[beam0, beam1],
+        clearance=ZCANT_CLEARANCE,
+        geometry_layer=LAYERS.DEVICE_P3,
+        handle_layer=LAYERS.HANDLE_P0,
+        release_spec=Z_CANT_BEAM_SPEC,
+    )
+
+    zclamp_lever_ext = gf.components.rectangle(
+        size=(ZCLAMP_LENGTH2, ZCLAMP_WIDTH), layer=LAYERS.HANDLE_P0, centered=False
+    )
+
+    (c << zclamp_lever).move(ZCLAMP_POS)
+    (c << zclamp_lever_ext).move((ZCLAMP_POS[0] + ZCLAMP_LENGTH1, ZCLAMP_POS[1]))
+
+    anchor2 = gf.Component()
+    anchor2 << gf.components.rectangle(
+        size=ZCLAMP_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=True
+    )
+    anchor2.move(
+        (
+            ZCLAMP_POS[0],
+            ZCLAMP_POS[1]
+            + ZCLAMP_WIDTH
+            + ZCLAMP_BEAM_LENGTH
+            + ZCLAMP_ANCHOR_SIZE[1] / 2,
+        )
+    )
+
+    (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[0])
+    (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1])
+    (c << via(LAYERS.DEVICE_P3)).move(
+        (
+            ZCLAMP_POS[0] + ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1],
+            ZCLAMP_POS[1]
+            + ZCLAMP_WIDTH
+            + ZCLAMP_BEAM_LENGTH
+            + ZCLAMP_ANCHOR_SIZE[1] / 2,
+        )
+    )
+    (c << via(LAYERS.DEVICE_P3)).move(
+        (
+            ZCLAMP_POS[0] + ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1] / 2,
+            ZCLAMP_POS[1] + ZCLAMP_WIDTH / 2,
+        )
+    )
+    # (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1]).movey(
+    #     -ZCLAMP_ANCHOR_SIZE[1] - 2 * ZCLAMP_BEAM_LENGTH - ZCLAMP_WIDTH
+    # )
+
+    # Generate comb drive for clamp
+
+    flex = c << gl.flexure.parallel_flexure(
+        length_beam=ZCLAMP_PFLEX_BEAM_LENGTH,
+        width_beam=ZCLAMP_PFLEX_BEAM_WIDTH,
+        length_bar=ZCLAMP_PFLEX_BAR_LENGTH,
+        width_bar=ZCLAMP_PFLEX_BAR_WIDTH,
+        beam_pos=ZCLAMP_PFLEX_BEAM_POS,
+        geometry_layer=LAYERS.DEVICE_P3,
+        beam_spec=ZCLAMP_PFLEX_BEAM_SPEC,
+        release_spec=RELEASE_SPEC,
+    )
+
+    flex.rotate(90).move(ZCLAMP_PFLEX_POS)
+    anchor3 = gf.Component()
+    anchor3 << gf.components.rectangle(
+        size=ZCLAMP_PFLEX_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=False
+    )
+    (anchor3 << via(LAYERS.DEVICE_P3)).move(
+        (ZCLAMP_PFLEX_ANCHOR_SIZE[0] / 2, ZCLAMP_PFLEX_ANCHOR_SIZE[1] / 2)
+    )
+    anchor3.move(
+        (
+            ZCLAMP_PFLEX_POS[0],
+            ZCLAMP_PFLEX_POS[1] + ZCLAMP_PFLEX_BAR_LENGTH / 2 - ZCLAMP_PFLEX_BEAM_WIDTH,
+        )
+    )
+    c << anchor3
+    (c << anchor3).mirror_y(ZCLAMP_PFLEX_POS[1])
+
+    # Generate peck and carriage
+    x0 = ZCLAMP_POS[0] + ZCLAMP_LENGTH1 + ZCLAMP_LENGTH2 - ZCLAMP_PECK_WIDTH
+    y0 = (
+        (ZCLAMP_PFLEX_BEAM_POS[2] - 0.5) * ZCLAMP_PFLEX_BAR_LENGTH
+        + ZCLAMP_PFLEX_POS[1]
+        + ZCLAMP_PFLEX_BEAM_WIDTH / 2
+    )
+
+    y1 = y0 - ZCLAMP_CARRIAGE_SPACING - ZCLAMP_PFLEX_POS[1]
+    x2 = -ZCLAMP_PFLEX_BEAM_LENGTH + ZCANT_CLEARANCE
+    y2 = y1 - ZCLAMP_CARRIAGE_WIDTH
+    x3 = x2 + ZCLAMP_PFLEX_POS[0] + ZCLAMP_CARRIAGE_WIDTH + ZCANT_CLEARANCE
+    y3 = y2 + ZCLAMP_PFLEX_POS[1] - ZCLAMP_COMB_HEIGHT
+    y4 = y3 - ZCLAMP_COMB_ANCHOR_WIDTH
+    x4 = ZCLAMP_POS[0] + ZCLAMP_LENGTH1 + ZCLAMP_LENGTH2
+
+    peck = c << gl.basic.rectangle(
+        size=(
+            ZCLAMP_PECK_WIDTH,
+            ZCLAMP_PECK_OVERLAP + ZCLAMP_POS[1] - y0,
+        ),
+        centered=False,
+        geometry_layer=LAYERS.DEVICE_P3,
+        release_spec=RELEASE_SPEC,
+    )
+
+    peck.move((x0, y0))
+
+    peck2 = c << gl.basic.rectangle(
+        size=(
+            ZCLAMP_POS[0]
+            + ZCLAMP_LENGTH1
+            + ZCLAMP_LENGTH2
+            - ZCLAMP_PFLEX_POS[0]
+            - ZCLAMP_CARRIAGE_WIDTH,
+            y0 - y2 - ZCLAMP_PFLEX_POS[1],
+        ),
+        centered=False,
+        geometry_layer=LAYERS.DEVICE_P3,
+        release_spec=RELEASE_SPEC,
+    )
+    peck2.move((ZCLAMP_PFLEX_POS[0] + ZCLAMP_CARRIAGE_WIDTH, y2 + ZCLAMP_PFLEX_POS[1]))
+
+    carriage_half = gf.Component()
+    (
+        carriage_half
+        << gl.basic.rectangle(
+            size=(
+                ZCLAMP_CARRIAGE_WIDTH,
+                ZCLAMP_CARRIAGE_SPACING,
+            ),
+            centered=False,
+            geometry_layer=LAYERS.DEVICE_P3,
+            release_spec=RELEASE_SPEC,
+        )
+    ).movey(y1)
+
+    (
+        carriage_half
+        << gl.basic.rectangle(
+            size=(-x2 + ZCLAMP_CARRIAGE_WIDTH, ZCLAMP_CARRIAGE_WIDTH),
+            centered=False,
+            geometry_layer=LAYERS.DEVICE_P3,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move((x2, y2))
+
+    (
+        carriage_half
+        << gl.basic.rectangle(
+            size=(ZCLAMP_CARRIAGE_WIDTH, y2),
+            centered=False,
+            geometry_layer=LAYERS.DEVICE_P3,
+            release_spec=RELEASE_SPEC,
+        )
+    ).movex(x2)
+
+    (
+        carriage_half
+        << gl.basic.rectangle(
+            size=(
+                x0
+                + ZCLAMP_PECK_WIDTH
+                - ZCLAMP_PFLEX_POS[0]
+                - x2
+                - ZCLAMP_CARRIAGE_WIDTH
+                - ZCLAMP_CARRIAGE_SPACING,
+                ZCLAMP_CARRIAGE_WIDTH,
+            ),
+            centered=False,
+            geometry_layer=LAYERS.DEVICE_P3,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move((x2 + ZCLAMP_CARRIAGE_WIDTH, 0))
+
+    (c << carriage_half).move(ZCLAMP_PFLEX_POS)
+    (c << carriage_half).move(ZCLAMP_PFLEX_POS).mirror_y(ZCLAMP_PFLEX_POS[1])
+
+    # Generate combs
+    comb_drive = gf.Component()
+    comb1 = comb_drive << gl.actuator.comb(
+        comb_height=ZCLAMP_COMB_HEIGHT,
+        comb_width=ZCLAMP_COMB_WIDTH,
+        comb_gap=ZCLAMP_COMB_GAP,
+        comb_count=ZCLAMP_COMB_COUNT,
+        comb_overlap=ZCLAMP_COMB_OVERLAP,
+        geometry_layer=LAYERS.DEVICE_P3,
+    )
+    comb1.move((x3, y3))
+
+    (
+        comb_drive
+        << gf.components.rectangle(
+            size=(x4 - x3, ZCLAMP_COMB_ANCHOR_WIDTH),
+            centered=False,
+            layer=LAYERS.DEVICE_P3,
+        )
+    ).move((x3, y4))
+
+    (c << comb_drive)
+    dy = y2 + ZCLAMP_CARRIAGE_WIDTH
+    (c << comb_drive).movey(-dy)
+
+    (
+        c
+        << gf.components.rectangle(
+            size=(ZCLAMP_COMB_ANCHOR_WIDTH, dy + ZCLAMP_COMB_ANCHOR_WIDTH),
+            centered=False,
+            layer=LAYERS.DEVICE_P3,
+        )
+    ).move((x4, y4 - dy))
+
+    # For test only
+    # _ = c << gl.basic.rectangle(
+    #     size=(
+    #         ZCLAMP_PECK_WIDTH,
+    #         ZCLAMP_PECK_WIDTH,
+    #     ),
+    #     centered=False,
+    #     geometry_layer=LAYERS.DEVICE_P3,
+    #     release_spec=None,
+    # )
+
+    # _.move((x0, ZCLAMP_PECK_OVERLAP + ZCLAMP_POS[1]))
+
+    return c
+
+
+def bonding_pads() -> gf.Component:
+    c = gf.Component()
+    pad = gf.components.rectangle(
+        size=(WIRE_BOND_SIZE, WIRE_BOND_SIZE),
+        centered=True,
+        layer=LAYERS.DEVICE_P3,
+    )
+
+    for x in WIRE_BOND_POS:
+        (c << pad).move((x, -CHIP_SIZE / 2 + WIRE_BOND_SIZE / 2 + WIRE_BOND_OFFSET))
+
+    return c
+
+
+@static_cell
 def device(text: str) -> gf.Component:
     c = gf.Component()
 
@@ -652,12 +1165,15 @@ def device(text: str) -> gf.Component:
 
     c << electrical_interconnect()
 
-    # # Emit label
-    # c << build_label()
+    zct = z_cant()
+    zact = z_actuator()
+    zcl = z_clamp()
+    pad = bonding_pads()
 
-    # # Emit zstage
-    # c << build_zstage()
+    for angle in [0, 90, 180, 270]:
+        (c << zct).rotate(angle)
+        (c << zact).rotate(angle)
+        (c << zcl).rotate(angle)
+        (c << pad).rotate(angle)
 
-    # # Emit rotator
-    # c << build_rotator()
     return c
