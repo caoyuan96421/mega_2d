@@ -21,8 +21,15 @@ DEVICE_ISOLATION = 7
 ELEC_ROUTING_WIDTH = 70
 
 RELEASE_SPEC = gl.datatypes.ReleaseSpec(
-    hole_radius=3,
+    hole_radius=3.3,
     distance=6,
+    angle_resolution=18,
+    layer=LAYERS.DEVICE_REMOVE,
+)
+
+RELEASE_SPEC_CHIP_BORDER = gl.datatypes.ReleaseSpec(
+    hole_radius=3.3,
+    distance=8,
     angle_resolution=18,
     layer=LAYERS.DEVICE_REMOVE,
 )
@@ -38,7 +45,7 @@ RFLEX_INNER_RADIUS0 = 90
 RFLEX_INNER_RADIUS1 = 110
 RFLEX_ANCHOR_RADIUS0 = 670
 RFLEX_ANCHOR_RADIUS1 = 740
-RFLEX_BEAM_WIDTH = 2.4
+RFLEX_BEAM_WIDTH = 2.6
 RFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     release_thick=True,
     thick_length=(0, 0.7),
@@ -53,7 +60,7 @@ RDRIVE_OUTER_RADIUS = 1100
 RDRIVE_TEETH_PITCH = 2 / 3
 RDRIVE_TEETH_WIDTH = 4
 RDRIVE_TEETH_HEIGHT = 7
-RDRIVE_TEETH_CLEARANCE = 1.6
+RDRIVE_TEETH_CLEARANCE = 2.0
 RDRIVE_TEETH_PHASE = [-120, 0, 120]
 RDRIVE_PHASE_SPAN = 40
 RDRIVE_TEETH_COUNT = int(np.floor(RDRIVE_PHASE_SPAN / RDRIVE_TEETH_PITCH))
@@ -230,7 +237,7 @@ def chip_border() -> gf.Component:
         geometry_layer=LAYERS.DEVICE_P3,
         handle_layer=LAYERS.HANDLE_P7,
         centered=True,
-        release_spec=RELEASE_SPEC,
+        release_spec=RELEASE_SPEC_CHIP_BORDER,
     )
 
     # pos = 2 * WIRE_BOND_SIZE + WIRE_BOND_OFFSET + CAVITY_WIDTH

@@ -238,7 +238,7 @@ for layer in []:
 # PROCESS COMPENSATION
 
 # Add CD compensation
-c.offset(layer=LAYERS.DEVICE_P3, distance=DEVICE_CD_COMPENSATION)
+c.offset(layer=LAYERS.DEVICE, distance=DEVICE_CD_COMPENSATION)
 c.offset(layer=LAYERS.DEVICE_REMOVE, distance=-DEVICE_CD_COMPENSATION)
 c.offset(layer=LAYERS.HANDLE_REMOVE, distance=-HANDLE_CD_COMPENSATION)
 
