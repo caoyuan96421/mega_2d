@@ -68,8 +68,11 @@ RDRIVE_ROTOR_SPAN = 150
 RDRIVE_STATOR_SPAN_MIN = RDRIVE_PHASE_SPAN * len(RDRIVE_TEETH_PHASE)
 RDRIVE_ANCHOR_BASE_SPAN = 20
 
+ZSTAGE_OUTER_RADIUS = 1280
+ZSTAGE_EXTENSION = (760, 150)
+
 RSENSOR_START_ANGLE = 40
-RSENSOR_END_ANGLE = 89
+RSENSOR_END_ANGLE = 88
 RSENSOR_COMB_GAP = 5
 RSENSOR_COMB_WIDTH = 6
 RSENSOR_COMB_COUNT = int(
@@ -79,6 +82,9 @@ RSENSOR_COMB_COUNT = int(
     )
 )
 RSENSOR_COMB_OVERLAP = 19
+RSENSOR_LEAD_WIDTH = 18
+RSENSOR_LEAD_LENGTH = ZSTAGE_OUTER_RADIUS - RFLEX_ANCHOR_RADIUS1
+RSENSOR_LEAD_GAP = 30
 
 R_CONNECTOR_CLEARANCE = 10  # Mechanical clearance
 
@@ -92,12 +98,11 @@ RANCHOR_ANGLE = RFLEX_BEAM_ANGLES[0] + 0.5 * RFLEX_BEAM_WIDTH / RFLEX_ANCHOR_RAD
     np.pi / 180
 )
 
-ZSTAGE_OUTER_RADIUS = 1280
-ZSTAGE_EXTENSION = (760, 150)
 
 Z_RELEASE_LOCK_SPAN = (40, 50)
 
 ZCANT_CLEARANCE = 8
+ZCANT_ROUTING_CLEARANCE = 15
 ZCANT_WIDTH = 400
 ZCANT_LENGTH = 600
 ZCANT_POSITION = ZSTAGE_OUTER_RADIUS + ZSTAGE_EXTENSION[1] + CAVITY_WIDTH - 120
@@ -156,7 +161,7 @@ ZCLAMP_PFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     thick_width=(18, 0),
     thick_offset=(0, 0),
 )
-ZCLAMP_PECK_OVERLAP = 15
+ZCLAMP_PECK_OVERLAP = 25
 ZCLAMP_PECK_WIDTH = 50
 ZCLAMP_CARRIAGE_WIDTH = 33
 ZCLAMP_CARRIAGE_SPACING = 30
@@ -313,7 +318,7 @@ def r_flexure_full() -> gf.Component:
         radius_inner=RFLEX_ANCHOR_RADIUS0,
         radius_outer=RFLEX_ANCHOR_RADIUS1,
         angles=(90 - RANCHOR_ANGLE, 90 + RANCHOR_ANGLE),
-        geometry_layer=LAYERS.DEVICE_P3,
+        geometry_layer=LAYERS.DEVICE_P3_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
@@ -322,7 +327,7 @@ def r_flexure_full() -> gf.Component:
         radius_inner=RFLEX_ANCHOR_RADIUS0,
         radius_outer=RFLEX_ANCHOR_RADIUS1 + R_CONNECTOR_CLEARANCE,
         angles=(90 - RANCHOR_ANGLE, 90 + RANCHOR_ANGLE),
-        geometry_layer=LAYERS.DEVICE_P3,
+        geometry_layer=LAYERS.DEVICE_P3_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
@@ -527,9 +532,16 @@ def r_sensor_half() -> gf.Component:
         comb_gap=RSENSOR_COMB_GAP,
         comb_count=RSENSOR_COMB_COUNT,
         comb_overlap_angle=RSENSOR_COMB_OVERLAP,
-        geometry_layer=LAYERS.DEVICE_P3,
+        geometry_layer=LAYERS.DEVICE_P3_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
     )
+
+    lead = c << gf.components.rectangle(
+        size=(RSENSOR_LEAD_WIDTH, RSENSOR_LEAD_LENGTH),
+        centered=False,
+        layer=LAYERS.DEVICE_P4,
+    )
+    lead.move((RSENSOR_LEAD_GAP / 2, RFLEX_ANCHOR_RADIUS1 + DEVICE_ISOLATION))
     return c
 
 
@@ -620,7 +632,7 @@ def electrical_interconnect() -> gf.Component:
     wire1 = gl.basic.ring(
         radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
-        angles=(-80, RDRIVE_PHASE_SPAN + 1),
+        angles=(-80, RDRIVE_PHASE_SPAN / 2 + 3),
         geometry_layer=LAYERS.DEVICE_P6,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
@@ -690,8 +702,8 @@ def electrical_interconnect() -> gf.Component:
             chord=0,
             angle_resolution=ANGLE_RESOLUTION,
         ),
-        angles=(RDRIVE_PHASE_SPAN - 1, RDRIVE_PHASE_SPAN + 1),
-        geometry_layer=LAYERS.DEVICE,
+        angles=(RDRIVE_PHASE_SPAN / 2 + 1, RDRIVE_PHASE_SPAN / 2 + 3),
+        geometry_layer=LAYERS.DEVICE_P3_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
@@ -704,7 +716,7 @@ def electrical_interconnect() -> gf.Component:
         ELEC_ROUTING_WIDTH,
     )
     p2 = (
-        ZCANT_POSITION - ELEC_ROUTING_WIDTH * 0.5 - ZCANT_CLEARANCE,
+        ZCANT_POSITION - ELEC_ROUTING_WIDTH * 0.5 - ZCANT_ROUTING_CLEARANCE,
         -ZCANT_WIDTH / 2 - ZCANT_BEAM_MAIN_LENGTH,
     )
     pmid = (p2[0], p1[1])
@@ -734,6 +746,41 @@ def electrical_interconnect() -> gf.Component:
     (c << via(LAYERS.DEVICE_P3)).move(
         (0, -0.5 * (RFLEX_ANCHOR_RADIUS0 + RFLEX_ANCHOR_RADIUS1))
     )
+
+    # Connect tip bias to R Flexure top anchor
+    p1 = (
+        ZCANT_WIDTH / 2 + ZCANT_BEAM_MAIN_LENGTH + ZCANT_ANCHOR_SIZE[1] / 2,
+        ZCANT_POSITION - ELEC_ROUTING_WIDTH * 0.5 - ZCANT_ROUTING_CLEARANCE,
+    )
+    p2 = (0, 0.5 * (RFLEX_ANCHOR_RADIUS0 + RFLEX_ANCHOR_RADIUS1))
+
+    pmid = (p2[0], p1[1])
+    path = gf.path.smooth(
+        points=np.array([p1, pmid, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P5, width=ELEC_ROUTING_WIDTH))
+
+    # Connect Rsensors to Zcant
+    path = gf.Path()
+    radius = ZSTAGE_OUTER_RADIUS - ELEC_ROUTING_WIDTH / 2 - ZCANT_ROUTING_CLEARANCE
+    startangle = (
+        np.asin((RSENSOR_LEAD_GAP + RSENSOR_LEAD_WIDTH) / 2 / radius) / np.pi * 180
+    )
+    angle = (
+        np.acos((ZSTAGE_EXTENSION[0] / 2 - ZCANT_ANCHOR_SIZE[1] / 2) / radius)
+        / np.pi
+        * 180
+    )
+
+    path += gf.path.arc(radius=radius, angle=startangle - angle)
+    path += gf.path.arc(radius=0.001, angle=angle)
+    path += gf.path.straight(ZCANT_POSITION - radius * np.sin(angle / 180 * np.pi))
+
+    path.rotate(-startangle)
+    path.move(((RSENSOR_LEAD_GAP + RSENSOR_LEAD_WIDTH) / 2, radius))
+    (c << path.extrude(layer=LAYERS.DEVICE_P4, width=ELEC_ROUTING_WIDTH))
+    (c << path.extrude(layer=LAYERS.DEVICE_P4, width=ELEC_ROUTING_WIDTH)).mirror_x()
 
     return c
 
