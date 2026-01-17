@@ -219,7 +219,7 @@ LABELS = {
 }
 VIA_RADIUS = 20
 VIA_DEVICE_CLEARANCE = 25
-VIA_HANDLE_CLEARANCE = 30
+VIA_HANDLE_CLEARANCE = 40
 VIA_VIA_CLEARANCE = 2 * (VIA_RADIUS + VIA_DEVICE_CLEARANCE) + 20
 
 via = lambda layer: gl.basic.via(
@@ -741,6 +741,7 @@ def electrical_interconnect() -> gf.Component:
 
     # Connect zcant to ground
     (c << via(LAYERS.DEVICE_P3)).move((-p1[0], p1[1]))
+    (c << via(LAYERS.DEVICE_P3)).move((-p1[0], -p1[1]))
 
     # Connect ground to RDrive
     (c << via(LAYERS.DEVICE_P3)).move(
@@ -761,7 +762,7 @@ def electrical_interconnect() -> gf.Component:
     )
     (c << path.extrude(layer=LAYERS.DEVICE_P5, width=ELEC_ROUTING_WIDTH))
 
-    # Connect Rsensors to Zcant
+    # Connect Right Rsensor to Zcant
     path = gf.Path()
     radius = ZSTAGE_OUTER_RADIUS - ELEC_ROUTING_WIDTH / 2 - ZCANT_ROUTING_CLEARANCE
     startangle = (
@@ -780,6 +781,36 @@ def electrical_interconnect() -> gf.Component:
     path.rotate(-startangle)
     path.move(((RSENSOR_LEAD_GAP + RSENSOR_LEAD_WIDTH) / 2, radius))
     (c << path.extrude(layer=LAYERS.DEVICE_P4, width=ELEC_ROUTING_WIDTH))
+
+    # Connect Left Rsensor to Zcant
+    path = gf.Path()
+    radius = ZSTAGE_OUTER_RADIUS - ELEC_ROUTING_WIDTH / 2 - ZCANT_ROUTING_CLEARANCE
+    startangle = (
+        np.asin((RSENSOR_LEAD_GAP + RSENSOR_LEAD_WIDTH) / 2 / radius) / np.pi * 180
+    )
+    y4 = (
+        ZCANT_WIDTH / 2
+        + ZCANT_BEAM_MAIN_LENGTH
+        + ZCANT_ANCHOR_SIZE[1] / 2
+        - ELEC_ROUTING_WIDTH * 2
+    )
+    angle = np.acos((y4) / radius) / np.pi * 180
+
+    path += gf.path.arc(radius=radius, angle=startangle - angle)
+    path += gf.path.arc(radius=0.001, angle=angle)
+    path += gf.path.straight(
+        ZCANT_POSITION
+        - ELEC_ROUTING_WIDTH * 0.5
+        - ZCANT_ROUTING_CLEARANCE
+        - radius * np.sin(angle / 180 * np.pi)
+    )
+    path += gf.path.arc(radius=0.001, angle=90)
+    path += gf.path.straight(
+        ZCANT_WIDTH / 2 + ZCANT_BEAM_MAIN_LENGTH + ZCANT_ANCHOR_SIZE[1] / 2 - y4
+    )
+
+    path.rotate(-startangle)
+    path.move(((RSENSOR_LEAD_GAP + RSENSOR_LEAD_WIDTH) / 2, radius))
     (c << path.extrude(layer=LAYERS.DEVICE_P4, width=ELEC_ROUTING_WIDTH)).mirror_x()
 
     return c
