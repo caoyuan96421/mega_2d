@@ -208,11 +208,20 @@ _ = c << gf.boolean(
     layer2=LAYERS.HANDLE_REMOVE,
 )
 
+# HANDLE_STEP_ETCH (must expose all HANDLE_REMOVE feature as well)
+_ = c << gf.boolean(
+    A=c,
+    B=d,
+    operation="|",
+    layer=LAYERS.HANDLE_STEP_ETCH,
+    layer1=LAYERS.HANDLE_REMOVE,
+    layer2=LAYERS.HANDLE_STEP_ETCH,
+)
+
 
 # POSITIVE LAYERS
 for layer in [
     LAYERS.VIAS_ETCH,
-    LAYERS.HANDLE_STEP_ETCH,
     LAYERS.TIP,
 ]:
     _ = c << gf.boolean(

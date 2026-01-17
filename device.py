@@ -95,7 +95,7 @@ RINTERCONN_VIAS_ANGLE = 0
 
 RSTOPPER_ANGLE = 45
 RSTOPPER_SPAN = 3
-RSTOPPER_LENGTH = 25
+RSTOPPER_LENGTH = 35
 
 RANCHOR_ANGLE = RFLEX_BEAM_ANGLES[0] + 0.5 * RFLEX_BEAM_WIDTH / RFLEX_ANCHOR_RADIUS0 / (
     np.pi / 180
@@ -122,7 +122,7 @@ ZCANT_BEAM_DRIVE_FRACTION = 0.8  # Controls lever ratio
 
 ZCANT_ANCHOR_SIZE = (100, 100)
 
-ZCLAMP_WIDTH = 100
+ZCLAMP_WIDTH = 130
 ZCLAMP_LENGTH1 = 280
 ZCLAMP_LENGTH2 = 840
 
@@ -181,11 +181,11 @@ ZCLAMP_COMB_ANCHOR_WIDTH = 25
 Z_CANT_BEAM_SPEC = None
 
 ZACTUATOR_SIZE = (900, 1700)
-ZACTUATOR_POS = (1280, 480)
+ZACTUATOR_POS = (1310, 480)
 ZACTUATOR_ANCHOR_SIZE = (100, 100)
 ZACTUATOR_BEAM_LENGTH = 50
 ZACTUATOR_BEAM_WIDTH = 4
-ZACTUATOR_CONN_WIDTH = 300
+ZACTUATOR_CONN_WIDTH = 250
 
 ZCANT_BEAM_STOPPER_INNER_WIDTH = 75
 ZCANT_BEAM_STOPPER_INNER_INSET = (75, 0)
@@ -206,7 +206,7 @@ ZCANT_BEAM_STOPPER_OUTER_POS = (ZCANT_BEAM_STOPPER_OUTER_WIDTH / 2, 0.6)
 
 WIRE_BOND_SIZE = 400
 WIRE_BOND_OFFSET = 300
-WIRE_BOND_POS = [-1300, -150, 500, 1500, 2400]
+WIRE_BOND_POS = [-1400, -150, 500, 1500, 2400]
 WIRE_BOND_GROUNDED_INDICES = [3]
 
 LABEL_REGION_SIZE = (500, 600)
@@ -235,6 +235,9 @@ via = lambda layer: gl.basic.via(
     ],
     angle_resolution=ANGLE_RESOLUTION,
 )
+
+HANDLE_STEP_RADIUS = ZSTAGE_OUTER_RADIUS + 400
+HANDLE_STEP_BAR_WIDTH = 1600
 
 
 @static_cell
@@ -505,7 +508,7 @@ def r_connectors_half() -> gf.Component:
     (c << handle_anchor_base)
     (c << handle_anchor_base).mirror_y()
 
-    # Handle stopper for R stage
+    # Handle stopper for R stage, for protection
     rstopper: gf.Component = gl.basic.ring(
         radius_inner=handle_connector_outer_radius - RSTOPPER_LENGTH - CAVITY_WIDTH / 2,
         radius_outer=handle_connector_outer_radius,
@@ -1398,6 +1401,44 @@ def bonding_pads() -> gf.Component:
     return c
 
 
+def handle_step():
+    c = gf.Component()
+    c << gf.components.circle(
+        radius=HANDLE_STEP_RADIUS,
+        angle_resolution=ANGLE_RESOLUTION,
+        layer=LAYERS.HANDLE_STEP_ETCH,
+    )
+    c << gf.components.rectangle(
+        size=(HANDLE_STEP_BAR_WIDTH, CHIP_SIZE),
+        centered=True,
+        layer=LAYERS.HANDLE_STEP_ETCH,
+    )
+
+    c << gf.components.rectangle(
+        size=(CHIP_SIZE, HANDLE_STEP_BAR_WIDTH),
+        centered=True,
+        layer=LAYERS.HANDLE_STEP_ETCH,
+    )
+
+    central_carriage = gf.components.circle(
+        radius=CENTER_CARRIAGE_RADIUS,
+        angle_resolution=ANGLE_RESOLUTION,
+        layer=LAYERS.DUMMY,
+    )
+
+    c.flatten()
+    c = gf.boolean(
+        A=c,
+        B=central_carriage,
+        operation="-",
+        layer=LAYERS.HANDLE_STEP_ETCH,
+        layer1=LAYERS.HANDLE_STEP_ETCH,
+        layer2=LAYERS.DUMMY,
+    )
+
+    return c
+
+
 def chip_label():
     c = gf.Component()
 
@@ -1463,5 +1504,6 @@ def device(text: str) -> gf.Component:
     label.move(LABEL_POSITION)
 
     c << handle_split()
+    c << handle_step()
 
     return c
