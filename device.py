@@ -149,8 +149,8 @@ ZCLAMP_PFLEX_BEAM_WIDTH = 5
 ZCLAMP_PFLEX_BEAM_LENGTH = 600
 ZCLAMP_PFLEX_BAR_WIDTH = 50
 ZCLAMP_PFLEX_BAR_LENGTH = 490
-ZCLAMP_PFLEX_STROKE = 25
-ZCLAMP_PFLEX_BEAM_POS = [0, 0.08, 0.92, 1]
+ZCLAMP_PFLEX_STROKE = 30
+ZCLAMP_PFLEX_BEAM_POS = [0, 0.1, 0.9, 1]
 ZCLAMP_PFLEX_ANCHOR_SIZE = (100, 100)
 ZCLAMP_PFLEX_POS = (
     ZCLAMP_POS[0] + ZCLAMP_PFLEX_BEAM_LENGTH + 150,
@@ -169,11 +169,12 @@ ZCLAMP_PECK_OVERLAP = 25
 ZCLAMP_PECK_WIDTH = 50
 ZCLAMP_CARRIAGE_WIDTH = 33
 ZCLAMP_CARRIAGE_SPACING = 30
+ZCLAMP_CARRIAGE_CENTRAL = 50
 
 ZCLAMP_COMB_GAP = 3.5
 ZCLAMP_COMB_WIDTH = 4
 ZCLAMP_COMB_COUNT = 110
-ZCLAMP_COMB_HEIGHT = 70
+ZCLAMP_COMB_HEIGHT = 75
 ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_HEIGHT - 10 - 2 * ZCLAMP_PFLEX_STROKE
 ZCLAMP_COMB_ANCHOR_WIDTH = 25
 
@@ -198,7 +199,6 @@ ZCANT_BEAM_STOPPER_INNER_LENGTH = (
 )
 ZCANT_BEAM_STOPPER_INNER_POS = (ZCLAMP_POS[0] + ZCLAMP_LENGTH1 - ZCANT_POSITION, 0)
 
-
 ZCANT_BEAM_STOPPER_OUTER_WIDTH = 50
 ZCANT_BEAM_STOPPER_OUTER_INSET = (0, 0.4)
 ZCANT_BEAM_STOPPER_OUTER_LENGTH = CAVITY_WIDTH + 50
@@ -214,7 +214,7 @@ LABEL_TEXT_SIZE = 70
 LABEL_POSITION = (-2500, 1850)
 LABELS = {
     220: "MEGA-2D",
-    100: "Cao Lab",
+    100: "C&T Lab",
     20: "EECS",
     -60: "Berkeley",
     -140: "",
@@ -1208,7 +1208,10 @@ def z_clamp() -> gf.Component:
         << gl.basic.rectangle(
             size=(
                 ZCLAMP_CARRIAGE_WIDTH,
-                ZCLAMP_CARRIAGE_SPACING,
+                ZCLAMP_PFLEX_BAR_LENGTH / 2
+                - ZCLAMP_PFLEX_BEAM_WIDTH
+                - ZCLAMP_PFLEX_STROKE
+                - y1,
             ),
             centered=False,
             geometry_layer=LAYERS.DEVICE_P3,
@@ -1236,26 +1239,25 @@ def z_clamp() -> gf.Component:
         )
     ).movex(x2)
 
-    (
-        carriage_half
-        << gl.basic.rectangle(
-            size=(
-                x0
-                + ZCLAMP_PECK_WIDTH
-                - ZCLAMP_PFLEX_POS[0]
-                - x2
-                - ZCLAMP_CARRIAGE_WIDTH
-                - ZCLAMP_CARRIAGE_SPACING,
-                ZCLAMP_CARRIAGE_WIDTH,
-            ),
-            centered=False,
-            geometry_layer=LAYERS.DEVICE_P3,
-            release_spec=RELEASE_SPEC,
-        )
-    ).move((x2 + ZCLAMP_CARRIAGE_WIDTH, 0))
-
     (c << carriage_half).move(ZCLAMP_PFLEX_POS)
     (c << carriage_half).move(ZCLAMP_PFLEX_POS).mirror_y(ZCLAMP_PFLEX_POS[1])
+
+    central_bar = c << gl.basic.rectangle(
+        size=(
+            x0
+            + ZCLAMP_PECK_WIDTH
+            - ZCLAMP_PFLEX_POS[0]
+            - x2
+            - ZCLAMP_CARRIAGE_WIDTH
+            - ZCLAMP_CARRIAGE_SPACING,
+            ZCLAMP_CARRIAGE_CENTRAL,
+        ),
+        centered=False,
+        geometry_layer=LAYERS.DEVICE_P3,
+        release_spec=RELEASE_SPEC,
+    )
+    central_bar.move((x2 + ZCLAMP_CARRIAGE_WIDTH, -ZCLAMP_CARRIAGE_CENTRAL / 2))
+    central_bar.move(ZCLAMP_PFLEX_POS)
 
     # Generate combs
     comb_drive = gf.Component()
@@ -1279,7 +1281,7 @@ def z_clamp() -> gf.Component:
     ).move((x3, y4))
 
     (c << comb_drive)
-    dy = y2 + ZCLAMP_CARRIAGE_WIDTH
+    dy = y2 + ZCLAMP_CARRIAGE_CENTRAL / 2
     (c << comb_drive).movey(-dy)
 
     (
