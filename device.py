@@ -71,6 +71,9 @@ RDRIVE_ANCHOR_BASE_SPAN = 20
 ZSTAGE_OUTER_RADIUS = 1280
 ZSTAGE_EXTENSION = (760, 150)
 
+HANDLE_DEVICE_SUPPORT_ANGLE = 60
+HANDLE_SPLIT_ANGLE = 25
+
 RSENSOR_START_ANGLE = 40
 RSENSOR_END_ANGLE = 88
 RSENSOR_COMB_GAP = 5
@@ -106,6 +109,7 @@ ZCANT_ROUTING_CLEARANCE = 15
 ZCANT_WIDTH = 400
 ZCANT_LENGTH = 600
 ZCANT_POSITION = ZSTAGE_OUTER_RADIUS + ZSTAGE_EXTENSION[1] + CAVITY_WIDTH - 120
+ZCANT_BOTTOM_CURVATURE = 600
 
 ZCANT_BEAM_MAIN_WIDTH = 8
 ZCANT_BEAM_MAIN_LENGTH = 80
@@ -925,6 +929,51 @@ def z_cant() -> gf.Component:
     (c << anchor1).movex(ZCANT_LENGTH)
     (c << anchor1).movex(ZCANT_LENGTH).mirror_y()
 
+    # Generate bottom curvature on zcant
+    sub = gf.Component()
+    circ = sub << gf.components.circle(
+        radius=ZCANT_BOTTOM_CURVATURE,
+        angle_resolution=ANGLE_RESOLUTION,
+        layer=LAYERS.HANDLE_P0,
+    )
+    circ.movex(ZCANT_POSITION - np.sqrt(ZCANT_BOTTOM_CURVATURE**2 - ZCANT_WIDTH**2 / 4))
+    handle_curved = gf.boolean(
+        A=c,
+        B=sub,
+        operation="-",
+        layer=LAYERS.HANDLE_P0,
+        layer1=LAYERS.HANDLE_P0,
+        layer2=LAYERS.HANDLE_P0,
+    )
+
+    c.remove_layers([LAYERS.HANDLE_P0])
+    c << handle_curved
+
+    # Connect zcant to bonding pads
+
+    p1 = (
+        ZCANT_POSITION + ZCANT_LENGTH,
+        ZCANT_WIDTH / 2 + ZCANT_BEAM_MAIN_LENGTH + ZCANT_ANCHOR_SIZE[1] / 2,
+    )
+    p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[2])
+    pmid = (p2[0], p1[1])
+    path = gf.path.smooth(
+        points=np.array([p1, pmid, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
+
+    p1 = (
+        ZCANT_POSITION + ZCANT_LENGTH,
+        -(ZCANT_WIDTH / 2 + ZCANT_BEAM_MAIN_LENGTH + ZCANT_ANCHOR_SIZE[1] / 2),
+    )
+    p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[1])
+    pmid = (p2[0], p1[1])
+    path = gf.path.smooth(
+        points=np.array([p1, pmid, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
     return c
 
 
@@ -1242,6 +1291,16 @@ def z_clamp() -> gf.Component:
         )
     ).move((x4, y4 - dy))
 
+    # Connect to bonding pad
+    p1 = (x4, y4 - dy + ZCLAMP_COMB_ANCHOR_WIDTH / 2)
+    p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[0])
+    pmid = (p2[0], p1[1])
+    path = gf.path.smooth(
+        points=np.array([p1, pmid, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
+
     # For test only
     # _ = c << gl.basic.rectangle(
     #     size=(
@@ -1254,6 +1313,57 @@ def z_clamp() -> gf.Component:
     # )
 
     # _.move((x0, ZCLAMP_PECK_OVERLAP + ZCLAMP_POS[1]))
+
+    return c
+
+
+def handle_split():
+    c = gf.Component()
+
+    c << gl.basic.ring(
+        radius_inner=RDRIVE_MID_RADIUS + CAVITY_WIDTH / 2,
+        radius_outer=ZSTAGE_OUTER_RADIUS - ZCANT_ROUTING_CLEARANCE - ELEC_ROUTING_WIDTH,
+        angles=(90 - HANDLE_DEVICE_SUPPORT_ANGLE, 90 + HANDLE_DEVICE_SUPPORT_ANGLE),
+        geometry_layer=LAYERS.DEVICE_P7,
+        angle_resolution=ANGLE_RESOLUTION,
+        release_spec=None,
+    )
+
+    via_radius = (
+        RDRIVE_MID_RADIUS
+        + CAVITY_WIDTH / 2
+        + ZSTAGE_OUTER_RADIUS
+        - ZCANT_ROUTING_CLEARANCE
+        - ELEC_ROUTING_WIDTH
+    ) / 2
+    via_angle_rad = 5 / 180 * np.pi
+    (c << via(LAYERS.DEVICE_P7_NOISO)).move(
+        (via_radius * np.sin(via_angle_rad), via_radius * np.cos(via_angle_rad))
+    )
+    (c << via(LAYERS.DEVICE_P7_NOISO)).move(
+        (-via_radius * np.sin(via_angle_rad), via_radius * np.cos(via_angle_rad))
+    )
+
+    # Make the cuts
+    angle_span = CAVITY_WIDTH / RDRIVE_MID_RADIUS * 180 / np.pi
+    cut = gl.basic.ring(
+        radius_inner=RDRIVE_MID_RADIUS,
+        radius_outer=ZSTAGE_OUTER_RADIUS
+        + gl.utils.sagitta_offset_safe(
+            radius=ZSTAGE_OUTER_RADIUS,
+            chord=0,
+            angle_resolution=ANGLE_RESOLUTION,
+        ),
+        angles=(
+            90 - HANDLE_SPLIT_ANGLE - angle_span / 2,
+            90 - HANDLE_SPLIT_ANGLE + angle_span / 2,
+        ),
+        geometry_layer=LAYERS.HANDLE_REMOVE,
+        angle_resolution=ANGLE_RESOLUTION,
+        release_spec=None,
+    )
+    (c << cut)
+    (c << cut).mirror_x()
 
     return c
 
@@ -1349,5 +1459,7 @@ def device(text: str) -> gf.Component:
 
     label = c << chip_label()
     label.move(LABEL_POSITION)
+
+    c << handle_split()
 
     return c
