@@ -212,7 +212,7 @@ WIRE_BOND_GROUNDED_INDICES = [3]
 
 LABEL_REGION_SIZE = (500, 600)
 LABEL_TEXT_SIZE = 70
-LABEL_POSITION = (-2500, 1850)
+LABEL_POSITION = (-2500, 1950)
 LABELS = {
     220: "MEGA-2D",
     100: "C&T Lab",
@@ -222,6 +222,12 @@ LABELS = {
     -210: "Ver 0.9",
     -290: "ZRLock",
 }
+
+
+PIC_REGION_SIZE = (500, 500)
+PIC_SIZE = 400
+PIC_POSITION = (2500, -1950)
+
 VIA_RADIUS = 20
 VIA_DEVICE_CLEARANCE = 25
 VIA_HANDLE_CLEARANCE = 40
@@ -1458,6 +1464,26 @@ def chip_label():
     return c
 
 
+def add_kirby():
+    c = gf.Component()
+
+    c << gf.components.rectangle(
+        size=PIC_REGION_SIZE, centered=True, layer=LAYERS.DEVICE_P3
+    )
+
+    pic = gf.import_gds("lib/gdslib_fun_symbols/main.gds", "KIRBY").remap_layers(
+        {(0, 0): LAYERS.DEVICE_REMOVE}
+    )
+    pic.transform(
+        klayout.dbcore.DCplxTrans(
+            mag=PIC_SIZE / 10,
+        )
+    )
+    pic_ref = c << pic
+
+    return c
+
+
 @static_cell
 def device(text: str) -> gf.Component:
     c = gf.Component()
@@ -1506,5 +1532,7 @@ def device(text: str) -> gf.Component:
 
     c << handle_split()
     c << handle_step()
+    kirby = c << add_kirby()
+    kirby.move(PIC_POSITION)
 
     return c
