@@ -146,10 +146,10 @@ ZCLAMP_POS = (
     ),
 )
 
-ZCLAMP_PFLEX_BEAM_WIDTH = 5
+ZCLAMP_PFLEX_BEAM_WIDTH = 4
 ZCLAMP_PFLEX_BEAM_LENGTH = 600
 ZCLAMP_PFLEX_BAR_WIDTH = 50
-ZCLAMP_PFLEX_BAR_LENGTH = 490
+ZCLAMP_PFLEX_BAR_LENGTH = 550
 ZCLAMP_PFLEX_STROKE = 30
 ZCLAMP_PFLEX_BEAM_POS = [0, 0.1, 0.9, 1]
 ZCLAMP_PFLEX_ANCHOR_SIZE = (100, 100)
@@ -162,31 +162,33 @@ ZCLAMP_PFLEX_POS = (
 )
 ZCLAMP_PFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     release_thick=True,
-    thick_length=(0, 0.7),
+    thick_length=(0, 0.75),
     thick_width=(18, 0),
     thick_offset=(0, 0),
 )
-ZCLAMP_PECK_OVERLAP = 30  # Controls the nominal overlap between peck and clamp lever
-ZCLAMP_PECK_WIDTH = 50
+ZCLAMP_PECK_OVERLAP = 25  # Controls the nominal overlap between peck and clamp lever
+ZCLAMP_PECK_WIDTH = 60
 ZCLAMP_CARRIAGE_WIDTH = 33
 ZCLAMP_CARRIAGE_SPACING = 30
-ZCLAMP_CARRIAGE_CENTRAL = 50
+ZCLAMP_CARRIAGE_CENTRAL = 40
 
 ZCLAMP_COMB_GAP = 3.5
 ZCLAMP_COMB_WIDTH = 4
 ZCLAMP_COMB_COUNT = 110
-ZCLAMP_COMB_HEIGHT = 75
+ZCLAMP_COMB_HEIGHT = 80
 ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_HEIGHT - 10 - 2 * ZCLAMP_PFLEX_STROKE
 ZCLAMP_COMB_ANCHOR_WIDTH = 25
+
+ZCLAMP_TEST_STIFFNESS = False  # For validation testing
 
 Z_CANT_BEAM_SPEC = None
 
 ZACTUATOR_SIZE = (900, 1700)
-ZACTUATOR_POS = (1310, 480)
+ZACTUATOR_POS = (1370, 480)
 ZACTUATOR_ANCHOR_SIZE = (100, 100)
 ZACTUATOR_BEAM_LENGTH = 50
 ZACTUATOR_BEAM_WIDTH = 4
-ZACTUATOR_CONN_WIDTH = 250
+ZACTUATOR_CONN_WIDTH = 160
 
 ZCANT_BEAM_STOPPER_INNER_WIDTH = 75
 ZCANT_BEAM_STOPPER_INNER_INSET = (75, 0)
@@ -204,6 +206,7 @@ ZCANT_BEAM_STOPPER_OUTER_WIDTH = 50
 ZCANT_BEAM_STOPPER_OUTER_INSET = (0, 0.4)
 ZCANT_BEAM_STOPPER_OUTER_LENGTH = CAVITY_WIDTH + 50
 ZCANT_BEAM_STOPPER_OUTER_POS = (ZCANT_BEAM_STOPPER_OUTER_WIDTH / 2, 0.6)
+
 
 WIRE_BOND_SIZE = 400
 WIRE_BOND_OFFSET = 300
@@ -1314,17 +1317,26 @@ def z_clamp() -> gf.Component:
     (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
 
     # For test only
-    # _ = c << gl.basic.rectangle(
-    #     size=(
-    #         ZCLAMP_PECK_WIDTH,
-    #         ZCLAMP_PECK_WIDTH,
-    #     ),
-    #     centered=False,
-    #     geometry_layer=LAYERS.DEVICE_P3,
-    #     release_spec=None,
-    # )
+    if ZCLAMP_TEST_STIFFNESS:
+        conn = c << gl.basic.rectangle(
+            size=(4, 50),
+            centered=False,
+            geometry_layer=LAYERS.DEVICE_P3,
+            release_spec=None,
+        )
 
-    # _.move((x0, ZCLAMP_PECK_OVERLAP + ZCLAMP_POS[1]))
+        conn.move((x0 + ZCLAMP_PECK_WIDTH - 4, ZCLAMP_PECK_OVERLAP + ZCLAMP_POS[1]))
+
+        anchor = c << gl.basic.rectangle(
+            size=(100, 50),
+            centered=False,
+            geometry_layer=LAYERS.DEVICE_P3,
+            release_spec=None,
+        )
+
+        anchor.move(
+            (x0 + ZCLAMP_PECK_WIDTH - 100, ZCLAMP_PECK_OVERLAP + ZCLAMP_POS[1] + 50)
+        )
 
     return c
 
