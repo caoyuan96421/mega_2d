@@ -13,7 +13,7 @@ import argparse
 from pdk import LAYERS, PDK
 from device import device, CHIP_SIZE, CAVITY_WIDTH, DEVICE_ISOLATION
 
-DEVICE_CD_COMPENSATION = 0.3
+DEVICE_CD_COMPENSATION_DEFAULT = 0.3
 HANDLE_CD_COMPENSATION_DEFAULT = 0
 
 PDK.activate()
@@ -52,8 +52,15 @@ parser.add_argument(
     "--comp-handle",
     action="store",
     type=float,
-    help="Compensate handle_remove (+ is expand)",
+    help="Compensate handle (+ is expand)",
     default=HANDLE_CD_COMPENSATION_DEFAULT,
+)
+parser.add_argument(
+    "--comp-device",
+    action="store",
+    type=float,
+    help="Compensate device (+ is expand)",
+    default=DEVICE_CD_COMPENSATION_DEFAULT,
 )
 
 args = parser.parse_args()
@@ -254,9 +261,9 @@ for layer in []:
 # PROCESS COMPENSATION
 
 # Add CD compensation
-c.offset(layer=LAYERS.DEVICE, distance=DEVICE_CD_COMPENSATION)
-c.offset(layer=LAYERS.DEVICE_REMOVE, distance=-DEVICE_CD_COMPENSATION)
-c.offset(layer=LAYERS.HANDLE_REMOVE, distance=args.comp_handle)
+c.offset(layer=LAYERS.DEVICE, distance=args.comp_device)
+c.offset(layer=LAYERS.DEVICE_REMOVE, distance=-args.comp_device)
+c.offset(layer=LAYERS.HANDLE_REMOVE, distance=-args.comp_handle)
 
 c.flatten()
 c.write_gds(f"./build/mega_2d_{args.version}_BUILD.gds", with_metadata=False)
