@@ -180,10 +180,12 @@ ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_HEIGHT - 10 - 2 * ZCLAMP_PFLEX_STROKE
 ZCLAMP_COMB_ANCHOR_WIDTH = 30
 
 ZCLAMP_LOCKER_YPOS = 150
-ZCLAMP_LOCKER_RING_OUTER_RADIUS = 30
+ZCLAMP_LOCKER_RING_OUTER_RADIUS = 35
 ZCLAMP_LOCKER_RING_INNER_RADIUS = ZCLAMP_LOCKER_RING_OUTER_RADIUS - 6
-ZCLAMP_LOCKER_BEAM_LENGTH = 100
-ZCLAMP_LOCKER_BEAM_WIDTH = 3
+ZCLAMP_LOCKER_BEAM1_LENGTH = 150
+ZCLAMP_LOCKER_BEAM1_WIDTH = 2.5
+ZCLAMP_LOCKER_BEAM2_LENGTH = 150
+ZCLAMP_LOCKER_BEAM2_WIDTH = 2.5
 ZCLAMP_LOCKER_BEAM_SEPARATION = 50
 ZCLAMP_LOCKER_RACHET_SIZE = (6, 6)
 ZCLAMP_LOCKER_RACHET_OFFSET = (
@@ -191,8 +193,10 @@ ZCLAMP_LOCKER_RACHET_OFFSET = (
     ZCLAMP_PFLEX_STROKE + ZCLAMP_LOCKER_RACHET_SIZE[1] + 3,
 )
 ZCLAMP_LOCKER_RACHET_ANCHOR_SIZE = (100, 100)
-ZCLAMP_LOCKER_STOPPER_SIZE = (40, 100)
-ZCLAMP_LOCKER_STOPPER_CLEARANCE = 10
+ZCLAMP_LOCKER_STOPPER_SIZE = (60, 80)
+ZCLAMP_LOCKER_STOPPER_CLEARANCE = 15
+
+ZCLAMP_PECK_STOPPER_SIZE = (60, 40)
 
 ZCLAMP_TEST_STIFFNESS = False  # For validation testing
 
@@ -1334,14 +1338,19 @@ def z_clamp() -> gf.Component:
     # Generate Locker rachet and release rings
     xr0 = x0 + ZCLAMP_PECK_WIDTH
     yr0 = y0 - ZCLAMP_PECK_WIDTH + ZCLAMP_LOCKER_YPOS
-    a = (ZCLAMP_LOCKER_BEAM_SEPARATION + ZCLAMP_LOCKER_BEAM_WIDTH) / 2
+    a = (ZCLAMP_LOCKER_BEAM_SEPARATION + ZCLAMP_LOCKER_BEAM1_WIDTH) / 2
     len_actual = (
-        ZCLAMP_LOCKER_BEAM_LENGTH
+        ZCLAMP_LOCKER_BEAM1_LENGTH
+        - ZCLAMP_LOCKER_RING_OUTER_RADIUS
+        + np.sqrt(ZCLAMP_LOCKER_RING_OUTER_RADIUS**2 - a**2)
+    )
+    len_actual2 = (
+        ZCLAMP_LOCKER_BEAM2_LENGTH
         - ZCLAMP_LOCKER_RING_OUTER_RADIUS
         + np.sqrt(ZCLAMP_LOCKER_RING_OUTER_RADIUS**2 - a**2)
     )
     beamH = gf.components.rectangle(
-        size=(ZCLAMP_LOCKER_BEAM_LENGTH, ZCLAMP_LOCKER_BEAM_WIDTH),
+        size=(ZCLAMP_LOCKER_BEAM1_LENGTH, ZCLAMP_LOCKER_BEAM1_WIDTH),
         centered=False,
         layer=LAYERS.DEVICE_P3,
     )
@@ -1350,7 +1359,7 @@ def z_clamp() -> gf.Component:
 
     ring1_pos = (
         xr0 + len_actual + ZCLAMP_LOCKER_RING_OUTER_RADIUS - 1,
-        yr0 + ZCLAMP_LOCKER_BEAM_WIDTH / 2,
+        yr0 + ZCLAMP_LOCKER_BEAM1_WIDTH / 2,
     )
     (
         c
@@ -1360,7 +1369,7 @@ def z_clamp() -> gf.Component:
             angles=(0, 360),
             geometry_layer=LAYERS.DEVICE_P3,
             angle_resolution=ANGLE_RESOLUTION,
-            release_spec=None,
+            release_spec=RELEASE_SPEC,
         )
     ).move(ring1_pos)
 
@@ -1416,23 +1425,23 @@ def z_clamp() -> gf.Component:
             angles=(0, 360),
             geometry_layer=LAYERS.DEVICE_P3,
             angle_resolution=ANGLE_RESOLUTION,
-            release_spec=None,
+            release_spec=RELEASE_SPEC,
         )
     ).move(ring2_pos)
 
     (xr1, yr1) = (
-        ring2_pos[0] - ZCLAMP_LOCKER_BEAM_WIDTH / 2,
+        ring2_pos[0] - ZCLAMP_LOCKER_BEAM2_WIDTH / 2,
         ring2_pos[1]
         - ZCLAMP_LOCKER_RING_OUTER_RADIUS
-        - len_actual
+        - len_actual2
         + gl.utils.sagitta_offset_safe(
             radius=ZCLAMP_LOCKER_RING_OUTER_RADIUS,
-            chord=ZCLAMP_LOCKER_BEAM_WIDTH,
+            chord=ZCLAMP_LOCKER_BEAM2_WIDTH,
             angle_resolution=ANGLE_RESOLUTION,
         ),
     )
     beamV = gf.components.rectangle(
-        size=(ZCLAMP_LOCKER_BEAM_WIDTH, ZCLAMP_LOCKER_BEAM_LENGTH),
+        size=(ZCLAMP_LOCKER_BEAM2_WIDTH, ZCLAMP_LOCKER_BEAM2_LENGTH),
         centered=False,
         layer=LAYERS.DEVICE_P3,
     )
@@ -1441,7 +1450,7 @@ def z_clamp() -> gf.Component:
 
     anchor_pos = (
         xr1
-        + ZCLAMP_LOCKER_BEAM_WIDTH
+        + ZCLAMP_LOCKER_BEAM2_WIDTH
         - ZCLAMP_LOCKER_RACHET_ANCHOR_SIZE[0]
         + ZCLAMP_LOCKER_BEAM_SEPARATION / 2,
         yr1 - ZCLAMP_LOCKER_RACHET_ANCHOR_SIZE[1],
@@ -1490,6 +1499,37 @@ def z_clamp() -> gf.Component:
             ring2_pos[1] - ZCLAMP_LOCKER_STOPPER_SIZE[0] / 2,
         )
     )
+
+    # Generate stopper at pecker
+    (xr4, yr4) = (
+        xr0,
+        yr0 - 2 * ZCLAMP_LOCKER_RING_OUTER_RADIUS - ZCLAMP_PECK_STOPPER_SIZE[1],
+    )
+    (
+        c
+        << gl.basic.rectangle(
+            size=ZCLAMP_PECK_STOPPER_SIZE,
+            geometry_layer=LAYERS.DEVICE_P3,
+            centered=False,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move((xr4, yr4))
+
+    (xr5, yr5) = (
+        xr0 + ZCLAMP_LOCKER_STOPPER_CLEARANCE,
+        yr4 - ZCLAMP_PECK_STOPPER_SIZE[1] - ZCLAMP_PFLEX_STROKE,
+    )
+    (
+        c
+        << gf.components.rectangle(
+            size=(
+                ring1_pos[0] + ZCLAMP_LOCKER_STOPPER_SIZE[0] / 2 - xr5,
+                ZCLAMP_PECK_STOPPER_SIZE[1],
+            ),
+            layer=LAYERS.DEVICE_P3,
+            centered=False,
+        )
+    ).move((xr5, yr5))
 
     # For test only
     if ZCLAMP_TEST_STIFFNESS:
