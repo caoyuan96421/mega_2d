@@ -173,8 +173,11 @@ ZCLAMP_CARRIAGE_SPACING = 30
 ZCLAMP_CARRIAGE_CENTRAL = 40
 
 ZCLAMP_COMB_GAP = 3.5
-ZCLAMP_COMB_WIDTH = 4
 ZCLAMP_COMB_COUNT = 110
+ZCLAMP_COMB_WIDTH = 4
+ZCLAMP_COMB_WIDTH_TOTAL = (
+    ZCLAMP_COMB_COUNT * ZCLAMP_COMB_GAP + (ZCLAMP_COMB_COUNT + 1) * ZCLAMP_COMB_WIDTH
+)
 ZCLAMP_COMB_HEIGHT = 80
 ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_HEIGHT - 10 - 2 * ZCLAMP_PFLEX_STROKE
 ZCLAMP_COMB_ANCHOR_WIDTH = 30
@@ -556,7 +559,7 @@ def r_connectors_half() -> gf.Component:
 @static_cell
 def r_sensor_half() -> gf.Component:
     c = gf.Component()
-    c << gl.actuator.angular_comb(
+    c << gl.actuator.comb_angular(
         radius_inner=RFLEX_ANCHOR_RADIUS1 + R_CONNECTOR_CLEARANCE,
         radius_outer=RDRIVE_INNER_RADIUS
         + gl.utils.sagitta_offset_safe(
@@ -565,11 +568,13 @@ def r_sensor_half() -> gf.Component:
             angle_resolution=ANGLE_RESOLUTION,
         ),
         angles=(RSENSOR_START_ANGLE, RSENSOR_END_ANGLE),
-        comb_gap=RSENSOR_COMB_GAP,
-        comb_count=RSENSOR_COMB_COUNT,
-        comb_overlap_angle=RSENSOR_COMB_OVERLAP,
+        gap=RSENSOR_COMB_GAP,
+        count=RSENSOR_COMB_COUNT,
+        overlap=RSENSOR_COMB_OVERLAP,
         geometry_layer=LAYERS.DEVICE_P3_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
+        release_spec_a=None,
+        release_spec_b=None,
     )
 
     lead = c << gf.components.rectangle(
@@ -1163,18 +1168,20 @@ def z_clamp() -> gf.Component:
 
     # Generate comb drive for clamp
 
-    flex = c << gl.flexure.parallel_flexure(
-        length_beam=ZCLAMP_PFLEX_BEAM_LENGTH,
-        width_beam=ZCLAMP_PFLEX_BEAM_WIDTH,
-        length_bar=ZCLAMP_PFLEX_BAR_LENGTH,
-        width_bar=ZCLAMP_PFLEX_BAR_WIDTH,
+    flex = c << gl.flexure.parallel(
+        beam_length=ZCLAMP_PFLEX_BEAM_LENGTH,
+        beam_width=ZCLAMP_PFLEX_BEAM_WIDTH,
+        bar_length=ZCLAMP_PFLEX_BAR_LENGTH,
+        bar_width=ZCLAMP_PFLEX_BAR_WIDTH,
         beam_pos=ZCLAMP_PFLEX_BEAM_POS,
         geometry_layer=LAYERS.DEVICE_P3,
         beam_spec=ZCLAMP_PFLEX_BEAM_SPEC,
         release_spec=RELEASE_SPEC,
     )
 
-    flex.rotate(90).move(ZCLAMP_PFLEX_POS)
+    flex.rotate(-90).move(ZCLAMP_PFLEX_POS).movex(
+        -ZCLAMP_PFLEX_BEAM_LENGTH - ZCLAMP_PFLEX_BAR_WIDTH
+    )
     anchor3 = gf.Component()
     anchor3 << gf.components.rectangle(
         size=ZCLAMP_PFLEX_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=False
@@ -1293,13 +1300,15 @@ def z_clamp() -> gf.Component:
 
     # Generate combs
     comb_drive = gf.Component()
-    comb1 = comb_drive << gl.actuator.comb(
-        comb_height=ZCLAMP_COMB_HEIGHT,
-        comb_width=ZCLAMP_COMB_WIDTH,
-        comb_gap=ZCLAMP_COMB_GAP,
-        comb_count=ZCLAMP_COMB_COUNT,
-        comb_overlap=ZCLAMP_COMB_OVERLAP,
+    comb1 = comb_drive << gl.actuator.comb_linear(
+        height=ZCLAMP_COMB_HEIGHT,
+        width=ZCLAMP_COMB_WIDTH_TOTAL,
+        gap=ZCLAMP_COMB_GAP,
+        count=ZCLAMP_COMB_COUNT,
+        overlap=ZCLAMP_COMB_OVERLAP,
         geometry_layer=LAYERS.DEVICE_P3,
+        release_spec_a=None,
+        release_spec_b=None,
     )
     comb1.move((x3, y3))
 
