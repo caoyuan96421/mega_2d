@@ -3,4 +3,4 @@
 	url = https://github.com/DanielHeEGG/gdslib_fun_symbols
 [submodule "lib/gfelib"]
 	path = lib/gfelib
-	url = https://github.com/DanielHeEGG/gfelib
+	url = https://github.com/Cao-RQM-Lab/gfelib
