@@ -83,7 +83,7 @@ CHIP_RECT = gf.components.rectangle(
     centered=True,
 )
 
-d = device(text=f"{args.version}\n{args.hash[:7]}\n{date_str}")
+d = device(ver=f"Ver {args.version}\n{args.hash[:7]}\n{date_str}")
 
 d.write_gds(f"./build/mega_2d_{args.version}_SOURCE.gds")
 

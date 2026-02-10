@@ -239,14 +239,14 @@ LABEL_REGION_SIZE = (500, 600)
 LABEL_TEXT_SIZE = 70
 LABEL_POSITION = (-2500, 1950)
 LABELS = {
-    220: "MEGA-2D",
+    210: "MEGA-2D",
     100: "C&T Lab",
     20: "EECS",
     -60: "Berkeley",
-    -140: "",
-    -210: "Ver 0.9",
-    -290: "ZRLock",
 }
+
+LABEL_VERSION_SIZE = 50
+LABEL_VERSION_YPOS = -130
 
 
 PIC_REGION_SIZE = (500, 500)
@@ -1682,7 +1682,7 @@ def handle_step():
     return c
 
 
-def chip_label():
+def chip_label(ver: str):
     c = gf.Component()
 
     c << gf.components.rectangle(
@@ -1697,6 +1697,15 @@ def chip_label():
             justify="center",
             layer=LAYERS.DEVICE_REMOVE,
         )
+
+    c << gf.components.text(
+        text=ver,
+        size=LABEL_VERSION_SIZE,
+        position=(0, LABEL_VERSION_YPOS),
+        justify="center",
+        layer=LAYERS.DEVICE_REMOVE,
+    )
+
     return c
 
 
@@ -1721,7 +1730,7 @@ def add_kirby():
 
 
 @static_cell
-def device(text: str) -> gf.Component:
+def device(ver: str) -> gf.Component:
     c = gf.Component()
 
     # Emit chip border
@@ -1763,7 +1772,7 @@ def device(text: str) -> gf.Component:
         (c << zcl).rotate(angle)
         (c << pad).rotate(angle)
 
-    label = c << chip_label()
+    label = c << chip_label(ver)
     label.move(LABEL_POSITION)
 
     c << handle_split()
