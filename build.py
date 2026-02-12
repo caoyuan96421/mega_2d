@@ -85,7 +85,7 @@ CHIP_RECT = gf.components.rectangle(
 
 d = device(ver=f"Ver {args.version}\n{args.hash[:7]}\n{date_str}")
 
-d.write_gds(f"./build/mega_2d_{args.version}_SOURCE.gds")
+d.write_gds(f"./build/mega_2d_{args.version}_{args.hash[:7]}_{date_str}_SOURCE.gds")
 
 c = gf.Component(name="chip")
 
@@ -266,7 +266,10 @@ c.offset(layer=LAYERS.DEVICE_REMOVE, distance=-args.comp_device)
 c.offset(layer=LAYERS.HANDLE_REMOVE, distance=-args.comp_handle)
 
 c.flatten()
-c.write_gds(f"./build/mega_2d_{args.version}_BUILD.gds", with_metadata=False)
+c.write_gds(
+    f"./build/mega_2d_{args.version}_{args.hash[:7]}_{date_str}_BUILD.gds",
+    with_metadata=False,
+)
 
 # if not args.no_merge:
 # generate reticles
