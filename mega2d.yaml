@@ -21,7 +21,7 @@ LayerViews:
   HANDLE_STEP_ETCH:
     layer: [13, 0]
     layer_in_name: true
-    hatch_pattern: coarsely right-hatched
+    hatch_pattern: right-hatched
     width: 1
     color: "#00A3EF"
   VIAS_ETCH:
