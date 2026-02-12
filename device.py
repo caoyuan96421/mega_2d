@@ -49,7 +49,7 @@ RFLEX_BEAM_WIDTH = 2.6
 RFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     release_thick=True,
     thick_length=(0, 0.7),
-    thick_width=(20, 0),
+    thick_width=(25, 0),
     thick_offset=(0, 0),
 )
 RFLEX_BEAM_ANGLES = [30, 60]
