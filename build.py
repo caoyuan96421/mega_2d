@@ -11,10 +11,30 @@ import datetime
 import argparse
 
 from pdk import LAYERS, PDK
-from device import device, CHIP_SIZE, CAVITY_WIDTH, DEVICE_ISOLATION
+from device import (
+    RFLEX_PROTECTION_ISOLATION,
+    device,
+    CHIP_SIZE,
+    CAVITY_WIDTH,
+    DEVICE_MIN_ISOLATION,
+)
 
 DEVICE_CD_COMPENSATION_DEFAULT = 0.3
 HANDLE_CD_COMPENSATION_DEFAULT = 0
+
+# Isolation distance for device layers
+DEVICE_MERGING_ISOLATION = [
+    DEVICE_MIN_ISOLATION,  # P0
+    DEVICE_MIN_ISOLATION,  # P1
+    RFLEX_PROTECTION_ISOLATION,  # P2
+    DEVICE_MIN_ISOLATION,  # P3
+    DEVICE_MIN_ISOLATION,  # P4
+    DEVICE_MIN_ISOLATION,  # P5
+    DEVICE_MIN_ISOLATION,  # P6
+    DEVICE_MIN_ISOLATION,  # P7
+]
+
+HANDLE_MERGING_ISOLATION = CAVITY_WIDTH
 
 PDK.activate()
 
@@ -110,7 +130,7 @@ for i in range(7, -1, -1):
         layer1=LAYERS.DUMMY,
         layer2=(LAYERS.DEVICE_P0[0], i),
     )
-    exp.offset(layer=LAYERS.DUMMY, distance=DEVICE_ISOLATION)
+    exp.offset(layer=LAYERS.DUMMY, distance=DEVICE_MERGING_ISOLATION[i])
 
     iso = gf.boolean(
         A=exp,
@@ -193,7 +213,7 @@ for i in range(7, -1, -1):
         layer1=LAYERS.DUMMY,
         layer2=(LAYERS.HANDLE_P0[0], i),
     )
-    exp.offset(layer=LAYERS.DUMMY, distance=CAVITY_WIDTH)
+    exp.offset(layer=LAYERS.DUMMY, distance=HANDLE_MERGING_ISOLATION)
 
     border = gf.boolean(
         A=exp,

@@ -17,7 +17,7 @@ CHIP_BORDER_WIDTH = 200
 
 ANGLE_RESOLUTION = 0.5
 CAVITY_WIDTH = 50
-DEVICE_ISOLATION = 7
+DEVICE_MIN_ISOLATION = 7
 ELEC_ROUTING_WIDTH = 70
 
 RELEASE_SPEC = gl.datatypes.ReleaseSpec(
@@ -53,6 +53,9 @@ RFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     thick_offset=(0, 0),
 )
 RFLEX_BEAM_ANGLES = [30, 60]
+
+RFLEX_CONN_ANGLE = 0.5 * (90 - RFLEX_BEAM_ANGLES[1])
+RFLEX_PROTECTION_ISOLATION = 25
 
 RDRIVE_INNER_RADIUS = 950
 RDRIVE_MID_RADIUS = 1000
@@ -305,7 +308,7 @@ def center_carriage() -> gf.Component:
     _ = c << gf.components.circle(
         radius=CENTER_CARRIAGE_RADIUS,
         angle_resolution=ANGLE_RESOLUTION,
-        layer=LAYERS.DEVICE_P3,
+        layer=LAYERS.DEVICE_P1_NOISO,
     )
 
     _ = c << gf.components.circle(
@@ -337,18 +340,34 @@ def center_carriage() -> gf.Component:
 def r_flexure_full() -> gf.Component:
     c = gf.Component()
 
-    butt: gf.Component = gl.flexure.butterfly(
+    butt = gf.Component()
+    butt << gl.flexure.butterfly(
         radius0=RFLEX_INNER_RADIUS0,
         radius1=RFLEX_INNER_RADIUS1,
         radius2=RFLEX_ANCHOR_RADIUS0,
         width_beam=RFLEX_BEAM_WIDTH,
         angles=RFLEX_BEAM_ANGLES,
         release_inner=False,
-        geometry_layer=LAYERS.DEVICE_P3,
+        geometry_layer=LAYERS.DEVICE_P2,
         angle_resolution=ANGLE_RESOLUTION,
         beam_spec=RFLEX_BEAM_SPEC,
         release_spec=RELEASE_SPEC,
     )
+
+    # Add beam protection
+    prot = gf.Component()
+    prot << gl.basic.ring(
+        radius_inner=RFLEX_INNER_RADIUS1 + RFLEX_PROTECTION_ISOLATION,
+        radius_outer=RFLEX_ANCHOR_RADIUS0 - RFLEX_PROTECTION_ISOLATION,
+        angles=(RFLEX_CONN_ANGLE - 90, 90 - RFLEX_CONN_ANGLE),
+        geometry_layer=LAYERS.DEVICE_P3,
+        angle_resolution=ANGLE_RESOLUTION,
+        release_spec=None,
+    )
+
+    # prot.offset(layer=LAYERS.DEVICE_P3, distance=RFLEX_PROTECTION_ISOLATION)
+
+    butt << prot
 
     (c << butt).rotate(90)
     (c << butt).rotate(270)
@@ -357,7 +376,7 @@ def r_flexure_full() -> gf.Component:
         radius_inner=RFLEX_ANCHOR_RADIUS0,
         radius_outer=RFLEX_ANCHOR_RADIUS1,
         angles=(90 - RANCHOR_ANGLE, 90 + RANCHOR_ANGLE),
-        geometry_layer=LAYERS.DEVICE_P3_NOISO,
+        geometry_layer=LAYERS.DEVICE_P2_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
@@ -366,7 +385,7 @@ def r_flexure_full() -> gf.Component:
         radius_inner=RFLEX_ANCHOR_RADIUS0,
         radius_outer=RFLEX_ANCHOR_RADIUS1 + R_CONNECTOR_CLEARANCE,
         angles=(90 - RANCHOR_ANGLE, 90 + RANCHOR_ANGLE),
-        geometry_layer=LAYERS.DEVICE_P3_NOISO,
+        geometry_layer=LAYERS.DEVICE_P2_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
@@ -417,12 +436,6 @@ def r_drive_half() -> gf.Component:
 def r_connectors_half() -> gf.Component:
     c = gf.Component()
 
-    beam_angle = 90 - RFLEX_BEAM_ANGLES[1]
-    connector0_angle = beam_angle + 0.5 * RFLEX_BEAM_WIDTH / RFLEX_ANCHOR_RADIUS1 / (
-        np.pi / 180
-    )
-    connector1_angle = 0.5 * beam_angle
-
     # Inner connection (hollow part + solid part)
     _ = c << gl.basic.ring(
         radius_inner=CENTER_CARRIAGE_RADIUS
@@ -432,8 +445,8 @@ def r_connectors_half() -> gf.Component:
             angle_resolution=ANGLE_RESOLUTION,
         ),
         radius_outer=RFLEX_ANCHOR_RADIUS0 - R_CONNECTOR_CLEARANCE,
-        angles=(-connector1_angle, connector1_angle),
-        geometry_layer=LAYERS.DEVICE_P3,
+        angles=(-RFLEX_CONN_ANGLE, RFLEX_CONN_ANGLE),
+        geometry_layer=LAYERS.DEVICE_P2,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=RELEASE_SPEC,
     )
@@ -446,8 +459,8 @@ def r_connectors_half() -> gf.Component:
             chord=0,
             angle_resolution=ANGLE_RESOLUTION,
         ),
-        angles=(-connector1_angle, connector1_angle),
-        geometry_layer=LAYERS.DEVICE_P3,
+        angles=(-RFLEX_CONN_ANGLE, RFLEX_CONN_ANGLE),
+        geometry_layer=LAYERS.DEVICE_P2_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,  # Solid
     )
@@ -476,7 +489,7 @@ def r_connectors_half() -> gf.Component:
     # Electrical Isolation
     _ = c << gl.basic.ring(
         radius_inner=RFLEX_ANCHOR_RADIUS1,
-        radius_outer=RFLEX_ANCHOR_RADIUS1 + DEVICE_ISOLATION,
+        radius_outer=RFLEX_ANCHOR_RADIUS1 + DEVICE_MIN_ISOLATION,
         angles=(0, RSENSOR_START_ANGLE),
         geometry_layer=LAYERS.DEVICE_REMOVE,
         angle_resolution=ANGLE_RESOLUTION,
@@ -484,7 +497,7 @@ def r_connectors_half() -> gf.Component:
     )
 
     _ = c << gl.basic.ring(
-        radius_inner=RFLEX_ANCHOR_RADIUS0 - DEVICE_ISOLATION,
+        radius_inner=RFLEX_ANCHOR_RADIUS0 - DEVICE_MIN_ISOLATION,
         radius_outer=RFLEX_ANCHOR_RADIUS0,
         angles=(-RFLEX_BEAM_ANGLES[0] * 0.75, 0),
         geometry_layer=LAYERS.DEVICE_REMOVE,
@@ -494,8 +507,8 @@ def r_connectors_half() -> gf.Component:
 
     hor_iso = c << gf.components.rectangle(
         size=(
-            RFLEX_ANCHOR_RADIUS1 - RFLEX_ANCHOR_RADIUS0 + 2 * DEVICE_ISOLATION,
-            DEVICE_ISOLATION,
+            RFLEX_ANCHOR_RADIUS1 - RFLEX_ANCHOR_RADIUS0 + 2 * DEVICE_MIN_ISOLATION,
+            DEVICE_MIN_ISOLATION,
         ),
         layer=LAYERS.DEVICE_REMOVE,
         centered=True,
@@ -582,7 +595,7 @@ def r_sensor_half() -> gf.Component:
         centered=False,
         layer=LAYERS.DEVICE_P4,
     )
-    lead.move((RSENSOR_LEAD_GAP / 2, RFLEX_ANCHOR_RADIUS1 + DEVICE_ISOLATION))
+    lead.move((RSENSOR_LEAD_GAP / 2, RFLEX_ANCHOR_RADIUS1 + DEVICE_MIN_ISOLATION))
     return c
 
 
@@ -662,7 +675,9 @@ def electrical_interconnect() -> gf.Component:
     )
 
     c << gl.basic.ring(
-        radius_inner=RDRIVE_OUTER_RADIUS + 2 * DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
+        radius_inner=RDRIVE_OUTER_RADIUS
+        + 2 * DEVICE_MIN_ISOLATION
+        + ELEC_ROUTING_WIDTH,
         radius_outer=ZSTAGE_OUTER_RADIUS,
         angles=(-180 - RINTERCONN_VIAS_ANGLE - 1, RINTERCONN_VIAS_ANGLE + 1),
         geometry_layer=LAYERS.DEVICE_P5,
@@ -671,8 +686,8 @@ def electrical_interconnect() -> gf.Component:
     )
 
     wire1 = gl.basic.ring(
-        radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION,
-        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
+        radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION,
+        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION + ELEC_ROUTING_WIDTH,
         angles=(-80, RDRIVE_PHASE_SPAN / 2 + 3),
         geometry_layer=LAYERS.DEVICE_P6,
         angle_resolution=ANGLE_RESOLUTION,
@@ -682,8 +697,8 @@ def electrical_interconnect() -> gf.Component:
     (c << wire1).mirror_x()
 
     c << gl.basic.ring(
-        radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_ISOLATION,
-        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
+        radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_MIN_ISOLATION,
+        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION + ELEC_ROUTING_WIDTH,
         angles=(-94, -86),
         geometry_layer=LAYERS.DEVICE_P6,
         angle_resolution=ANGLE_RESOLUTION,
@@ -693,7 +708,7 @@ def electrical_interconnect() -> gf.Component:
     # Overrides on DEVICE layer to make connections complete
     # Connect left C phase with middle crossing
     c << gl.basic.ring(
-        radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_ISOLATION,
+        radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_MIN_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS,
         angles=(-87, -RDRIVE_STATOR_SPAN_MIN / 2),
         geometry_layer=LAYERS.DEVICE,
@@ -702,7 +717,7 @@ def electrical_interconnect() -> gf.Component:
     )
     # Connect right A phase with middle crossing
     c << gl.basic.ring(
-        radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_ISOLATION,
+        radius_inner=RDRIVE_MID_RADIUS + RDRIVE_TEETH_HEIGHT + DEVICE_MIN_ISOLATION,
         radius_outer=RDRIVE_OUTER_RADIUS,
         angles=(-180 + RDRIVE_STATOR_SPAN_MIN / 2, -95),
         geometry_layer=LAYERS.DEVICE,
@@ -711,8 +726,8 @@ def electrical_interconnect() -> gf.Component:
     )
     # Connect right C phase routing with middle crossing
     c << gl.basic.ring(
-        radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION,
-        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
+        radius_inner=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION,
+        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION + ELEC_ROUTING_WIDTH,
         angles=(-85, -80),
         geometry_layer=LAYERS.DEVICE,
         angle_resolution=ANGLE_RESOLUTION,
@@ -720,8 +735,8 @@ def electrical_interconnect() -> gf.Component:
     )
     # Connect left A phase routing with middle crossing
     c << gl.basic.ring(
-        radius_inner=via1_radius + ELEC_ROUTING_WIDTH / 2 + DEVICE_ISOLATION,
-        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + ELEC_ROUTING_WIDTH,
+        radius_inner=via1_radius + ELEC_ROUTING_WIDTH / 2 + DEVICE_MIN_ISOLATION,
+        radius_outer=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION + ELEC_ROUTING_WIDTH,
         angles=(-100, -93),
         geometry_layer=LAYERS.DEVICE,
         angle_resolution=ANGLE_RESOLUTION,
@@ -737,9 +752,9 @@ def electrical_interconnect() -> gf.Component:
             angle_resolution=ANGLE_RESOLUTION,
         ),
         radius_outer=RDRIVE_OUTER_RADIUS
-        + DEVICE_ISOLATION
+        + DEVICE_MIN_ISOLATION
         + gl.utils.sagitta_offset_safe(
-            radius=RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION,
+            radius=RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION,
             chord=0,
             angle_resolution=ANGLE_RESOLUTION,
         ),
@@ -753,7 +768,7 @@ def electrical_interconnect() -> gf.Component:
 
     # Connect A and C phase to zcant
     p1 = (
-        (RDRIVE_OUTER_RADIUS + DEVICE_ISOLATION + 0.5 * ELEC_ROUTING_WIDTH),
+        (RDRIVE_OUTER_RADIUS + DEVICE_MIN_ISOLATION + 0.5 * ELEC_ROUTING_WIDTH),
         ELEC_ROUTING_WIDTH,
     )
     p2 = (
