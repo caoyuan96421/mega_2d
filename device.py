@@ -358,7 +358,7 @@ def r_flexure_full() -> gf.Component:
     prot = gf.Component()
     prot << gl.basic.ring(
         radius_inner=RFLEX_INNER_RADIUS1 + RFLEX_PROTECTION_ISOLATION,
-        radius_outer=RFLEX_ANCHOR_RADIUS0 - RFLEX_PROTECTION_ISOLATION,
+        radius_outer=RFLEX_ANCHOR_RADIUS0 + RFLEX_PROTECTION_ISOLATION,
         angles=(RFLEX_CONN_ANGLE - 90, 90 - RFLEX_CONN_ANGLE),
         geometry_layer=LAYERS.DEVICE_P3,
         angle_resolution=ANGLE_RESOLUTION,
@@ -381,11 +381,21 @@ def r_flexure_full() -> gf.Component:
         release_spec=None,
     )
 
+    # Dummy for generation RFlex beam protection properly, must not be NOISO
+    anchor_dev_dummy: gf.Component = gl.basic.ring(
+        radius_inner=RFLEX_ANCHOR_RADIUS0,
+        radius_outer=RFLEX_ANCHOR_RADIUS0 + RFLEX_PROTECTION_ISOLATION,
+        angles=(90 - RANCHOR_ANGLE, 90 + RANCHOR_ANGLE),
+        geometry_layer=LAYERS.DEVICE_P2,
+        angle_resolution=ANGLE_RESOLUTION,
+        release_spec=None,
+    )
+
     anchor_dev_expand: gf.Component = gl.basic.ring(
         radius_inner=RFLEX_ANCHOR_RADIUS0,
         radius_outer=RFLEX_ANCHOR_RADIUS1 + R_CONNECTOR_CLEARANCE,
         angles=(90 - RANCHOR_ANGLE, 90 + RANCHOR_ANGLE),
-        geometry_layer=LAYERS.DEVICE_P2_NOISO,
+        geometry_layer=LAYERS.DEVICE_P2,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=None,
     )
@@ -402,6 +412,7 @@ def r_flexure_full() -> gf.Component:
     for angle in [0, 90, 180, 270]:
         if angle in [0, 180]:
             (c << anchor_dev).rotate(angle, (0, 0))
+            (c << anchor_dev_dummy).rotate(angle, (0, 0))
         else:
             (c << anchor_dev_expand).rotate(angle, (0, 0))
         (c << anchor_handle).rotate(angle, (0, 0))
@@ -465,7 +476,7 @@ def r_connectors_half() -> gf.Component:
         release_spec=None,  # Solid
     )
 
-    # Outer connection
+    # Outer connection (Rstage carriage)
     _ = c << gl.basic.ring(
         radius_inner=RFLEX_ANCHOR_RADIUS1
         + R_CONNECTOR_CLEARANCE
@@ -481,7 +492,7 @@ def r_connectors_half() -> gf.Component:
             angle_resolution=ANGLE_RESOLUTION,
         ),
         angles=(-RDRIVE_ROTOR_SPAN / 2, RSENSOR_START_ANGLE),
-        geometry_layer=LAYERS.DEVICE_P3,
+        geometry_layer=LAYERS.DEVICE_P2_NOISO,
         angle_resolution=ANGLE_RESOLUTION,
         release_spec=RELEASE_SPEC,
     )
@@ -800,7 +811,7 @@ def electrical_interconnect() -> gf.Component:
     (c << via(LAYERS.DEVICE_P3)).move((-p1[0], -p1[1]))
 
     # Connect ground to RDrive
-    (c << via(LAYERS.DEVICE_P3)).move(
+    (c << via(LAYERS.DEVICE_P2_NOISO)).move(
         (0, -0.5 * (RFLEX_ANCHOR_RADIUS0 + RFLEX_ANCHOR_RADIUS1))
     )
 
