@@ -320,14 +320,14 @@ def center_carriage() -> gf.Component:
     _ = c << gf.components.rectangle(
         size=(TIP_SIZE, TIP_SIZE),
         centered=True,
-        layer=LAYERS.TIP,
+        layer=LAYERS.TIP0,
     )
 
     for radius in TIP_GUARD_RING_RADIUSES:
         _ = c << gf.components.ring(
             radius=radius,
             width=TIP_GUARD_RING_THICKNESS,
-            layer=LAYERS.TIP,
+            layer=LAYERS.TIP0,
             angle=360,
         )
 

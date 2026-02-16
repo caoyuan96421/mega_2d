@@ -35,6 +35,15 @@ DEVICE_MERGING_ISOLATION = [
 
 HANDLE_MERGING_ISOLATION = CAVITY_WIDTH
 
+# Layers for generating reticle/masks
+reticle_layers = {
+    LAYERS.TIP: {"mirror": False, "type": "stepper"},
+    LAYERS.DEVICE_REMOVE: {"mirror": False, "type": "stepper"},
+    LAYERS.VIAS_ETCH: {"mirror": False, "type": "stepper"},
+    LAYERS.HANDLE_STEP_ETCH: {"mirror": True, "type": "stepper"},
+    LAYERS.HANDLE_REMOVE: {"mirror": True, "type": "wafer"},
+}
+
 PDK.activate()
 
 import gfebuild as gb
@@ -45,11 +54,11 @@ parser.add_argument(
     action="store_true",
     help="Don't merge the device patterns (e.g. release holes), because it can be very slow. For debug use only, ASML reticle files will not be generated",
 )
-parser.add_argument(
-    "--mirror",
-    action="store_true",
-    help="Write additional ASML reticle files that are mirrored across x=0 (PLACEMENTS file is not mirrored)",
-)
+# parser.add_argument(
+#     "--mirror",
+#     action="store_true",
+#     help="Write additional ASML reticle files that are mirrored across x=0 (PLACEMENTS file is not mirrored)",
+# )
 parser.add_argument(
     "--show",
     action="store_true",
@@ -259,7 +268,7 @@ _ = c << gf.boolean(
 # POSITIVE LAYERS
 for layer in [
     LAYERS.VIAS_ETCH,
-    LAYERS.TIP,
+    LAYERS.TIP0,
 ]:
     _ = c << gf.boolean(
         A=CHIP_RECT,
@@ -295,43 +304,50 @@ c.write_gds(
 )
 
 if not args.no_merge:
-    # generate reticles
+
+    stepper_layers = [
+        layer for layer, spec in reticle_layers.items() if spec["type"] == "stepper"
+    ]
+    wafer_layers = [
+        layer for layer, spec in reticle_layers.items() if spec["type"] == "wafer"
+    ]
+
+    # generate stepper reticles
+    r = c.copy()
+
+    # Mirror the specified layers
+    for layer in stepper_layers:
+        if reticle_layers[layer]["mirror"]:
+            r.remove_layers([layer])
+            r << (c.extract([layer]).mirror_x())
+
     reticles, placements = gb.asml300.reticle(
-        component=c,
+        component=r,
         image_size=(CHIP_SIZE, CHIP_SIZE),
-        image_layers=[
-            LAYERS.VIAS_ETCH,
-            LAYERS.DEVICE_REMOVE,
-        ],
-        id=f"MPC-{args.version}",
+        image_layers=stepper_layers,
+        id=f"M2D-{args.version}",
         text=date_str,
     )
 
-for i, reticle in enumerate(reticles):
-    for key, value in placements.items():
-        if value[0] == i:
-            _ = reticle << gf.components.text(
-                text=str(LAYERS(key)),
-                size=0.2 * CHIP_SIZE,
-                position=(value[1], value[2]),
-                justify="center",
-                layer=LAYERS.DUMMY,
-            )
-    reticle.flatten()
-    reticle.write_gds(
-        f"./build/{filename_prefix}_RETICLE_ASML_{i}.gds", with_metadata=False
-    )
-
-    if args.mirror:
-        reticle.mirror_x(0)
+    for i, reticle in enumerate(reticles):
+        for layer, pos in placements.items():
+            if pos[0] == i:
+                _ = reticle << gf.components.text(
+                    text=str(LAYERS(layer))
+                    + (" (mirror)" if reticle_layers[layer]["mirror"] else ""),
+                    size=0.2 * CHIP_SIZE,
+                    position=(pos[1], pos[2]),
+                    justify="center",
+                    layer=LAYERS.DUMMY,
+                )
+        reticle.flatten()
         reticle.write_gds(
-            f"./build/{filename_prefix}_RETICLE_ASML_{i}_MIRROR.gds",
-            with_metadata=False,
+            f"./build/{filename_prefix}_RETICLE_ASML_{i}.gds", with_metadata=False
         )
 
-with open(f"./build/{filename_prefix}_RETICLE_ASML_PLACEMENTS.txt", "w") as f:
-    for key, value in placements.items():
-        f.write(f"{LAYERS(key)}: {value[0]}, {value[1]:.2f}, {value[2]:.2f}\n")
+    with open(f"./build/{filename_prefix}_RETICLE_ASML_PLACEMENTS.txt", "w") as f:
+        for layer, pos in placements.items():
+            f.write(f"{LAYERS(layer)}: {pos[0]}, {pos[1]:.2f}, {pos[2]:.2f}\n")
 
 # generate wafer masks for backside
 # for layer in [LAYERS.HANDLE_REMOVE, LAYERS.CAP_BACKSIDE]:
