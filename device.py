@@ -906,7 +906,7 @@ def z_cant() -> gf.Component:
         isolation_x=(0, 0),
         isolation_y=(0, 0),
         spec=Z_CANT_BEAM_SPEC,
-        place=[True, False],
+        place=[True, True],
     )
 
     beam_main_1 = gl.flexure.ZCantileverBeam(
@@ -918,7 +918,7 @@ def z_cant() -> gf.Component:
         isolation_x=(0, 0),
         isolation_y=(0, 0),
         spec=Z_CANT_BEAM_SPEC,
-        place=[True, False],
+        place=[True, True],
     )
 
     beam_drive = gl.flexure.ZCantileverBeam(
@@ -930,7 +930,7 @@ def z_cant() -> gf.Component:
         isolation_x=(0, 1 - ZCANT_BEAM_DRIVE_FRACTION),
         isolation_y=(0, 0.25),
         spec=Z_CANT_BEAM_SPEC,
-        place=[True, False],
+        place=[False, True],
     )
 
     beam_stopper_inner = gl.flexure.ZCantileverBeam(
@@ -957,21 +957,16 @@ def z_cant() -> gf.Component:
         place=[True, False],
     )
 
-    zcant_half_drive = gl.flexure.z_cantilever_half(
+    zcantilever = gl.flexure.z_cantilever(
         length=ZCANT_LENGTH,
         width=ZCANT_WIDTH,
-        beams=[beam_main_0, beam_main_1, beam_drive],
-        clearance=ZCANT_CLEARANCE,
-        middle_split=True,
-        geometry_layer=LAYERS.DEVICE_P3,
-        handle_layer=LAYERS.HANDLE_P0,
-        release_spec=Z_CANT_BEAM_SPEC,
-    )
-
-    zcant_half_nodrive = gl.flexure.z_cantilever_half(
-        length=ZCANT_LENGTH,
-        width=ZCANT_WIDTH,
-        beams=[beam_main_0, beam_main_1, beam_stopper_inner, beam_stopper_outer],
+        beams=[
+            beam_main_0,
+            beam_main_1,
+            beam_drive,
+            beam_stopper_inner,
+            beam_stopper_outer,
+        ],
         clearance=ZCANT_CLEARANCE,
         middle_split=True,
         geometry_layer=LAYERS.DEVICE_P3,
@@ -990,8 +985,7 @@ def z_cant() -> gf.Component:
         )
     )
 
-    (c << zcant_half_drive).movex(ZCANT_POSITION)
-    (c << zcant_half_nodrive).mirror_y().movex(ZCANT_POSITION)
+    (c << zcantilever).movex(ZCANT_POSITION)
     (c << anchor1)
     (c << anchor1).mirror_y()
     (c << anchor1).movex(ZCANT_LENGTH)
