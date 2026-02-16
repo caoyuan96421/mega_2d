@@ -38,7 +38,10 @@ class LAYERS(gf.technology.LayerMap):
 
     VIAS_ETCH: gf.typings.Layer = (21, 0)
 
-    TIP: gf.typings.Layer = (22, 0)
+    TIP0: gf.typings.Layer = (22, 0)
+    TIP1: gf.typings.Layer = (22, 1)
+    TIP2: gf.typings.Layer = (22, 2)
+    TIP3: gf.typings.Layer = (22, 3)
 
 
 LAYER_VIEWS = gf.technology.LayerViews(filepath="mega2d.yaml")

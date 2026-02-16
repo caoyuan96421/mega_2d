@@ -37,7 +37,7 @@ HANDLE_MERGING_ISOLATION = CAVITY_WIDTH
 
 # Layers for generating reticle/masks
 reticle_layers = {
-    LAYERS.TIP: {"mirror": False, "type": "stepper"},
+    LAYERS.TIP0: {"mirror": False, "type": "stepper"},
     LAYERS.DEVICE_REMOVE: {"mirror": False, "type": "stepper"},
     LAYERS.VIAS_ETCH: {"mirror": False, "type": "stepper"},
     LAYERS.HANDLE_STEP_ETCH: {"mirror": True, "type": "stepper"},
@@ -269,6 +269,9 @@ _ = c << gf.boolean(
 for layer in [
     LAYERS.VIAS_ETCH,
     LAYERS.TIP0,
+    LAYERS.TIP1,
+    LAYERS.TIP2,
+    LAYERS.TIP3,
 ]:
     _ = c << gf.boolean(
         A=CHIP_RECT,

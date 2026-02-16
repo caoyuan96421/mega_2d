@@ -37,7 +37,9 @@ RELEASE_SPEC_CHIP_BORDER = gl.datatypes.ReleaseSpec(
 CENTER_CARRIAGE_RADIUS = 75
 # CENTER_CARRIAGE_CAVITY_RADIUS = 250
 
-TIP_SIZE = 4
+TIP_SIZE = [1.5, 2, 3, 4]
+TIP_KOH_WIDTH = 1
+TIP_KOH_LENGTH = 2
 TIP_GUARD_RING_RADIUSES = [CENTER_CARRIAGE_RADIUS + CAVITY_WIDTH * 2, 500]
 TIP_GUARD_RING_THICKNESS = 5
 
@@ -317,21 +319,23 @@ def center_carriage() -> gf.Component:
         layer=LAYERS.HANDLE_P1,
     )
 
-    _ = c << gf.components.rectangle(
-        size=(TIP_SIZE, TIP_SIZE),
-        centered=True,
-        layer=LAYERS.TIP0,
-    )
+    c << via(LAYERS.DEVICE_P3)
 
-    for radius in TIP_GUARD_RING_RADIUSES:
-        _ = c << gf.components.ring(
-            radius=radius,
-            width=TIP_GUARD_RING_THICKNESS,
-            layer=LAYERS.TIP0,
-            angle=360,
+    # Generate tip
+    for i in range(0, 4):
+        for radius in TIP_GUARD_RING_RADIUSES:
+            _ = c << gf.components.ring(
+                radius=radius,
+                width=TIP_GUARD_RING_THICKNESS,
+                layer=(LAYERS.TIP0[0], i),
+                angle=360,
+            )
+
+        c << gf.components.rectangle(
+            size=(TIP_SIZE[i], TIP_SIZE[i]),
+            centered=True,
+            layer=(LAYERS.TIP0[0], i),
         )
-
-    _ = c << via(LAYERS.DEVICE_P3)
 
     return c
 
