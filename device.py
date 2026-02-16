@@ -906,6 +906,7 @@ def z_cant() -> gf.Component:
         isolation_x=(0, 0),
         isolation_y=(0, 0),
         spec=Z_CANT_BEAM_SPEC,
+        place=[True, False],
     )
 
     beam_main_1 = gl.flexure.ZCantileverBeam(
@@ -917,6 +918,7 @@ def z_cant() -> gf.Component:
         isolation_x=(0, 0),
         isolation_y=(0, 0),
         spec=Z_CANT_BEAM_SPEC,
+        place=[True, False],
     )
 
     beam_drive = gl.flexure.ZCantileverBeam(
@@ -928,6 +930,7 @@ def z_cant() -> gf.Component:
         isolation_x=(0, 1 - ZCANT_BEAM_DRIVE_FRACTION),
         isolation_y=(0, 0.25),
         spec=Z_CANT_BEAM_SPEC,
+        place=[True, False],
     )
 
     beam_stopper_inner = gl.flexure.ZCantileverBeam(
@@ -939,6 +942,7 @@ def z_cant() -> gf.Component:
         isolation_x=(ZCANT_BEAM_STOPPER_INNER_WIDTH, 0),
         isolation_y=ZCANT_BEAM_STOPPER_INNER_INSET,
         spec=gl.datatypes.BeamSpec(release_thin=True),
+        place=[True, False],
     )
 
     beam_stopper_outer = gl.flexure.ZCantileverBeam(
@@ -950,6 +954,7 @@ def z_cant() -> gf.Component:
         isolation_x=(ZCANT_BEAM_STOPPER_OUTER_WIDTH, 0),
         isolation_y=ZCANT_BEAM_STOPPER_OUTER_INSET,
         spec=gl.datatypes.BeamSpec(release_thin=True),
+        place=[True, False],
     )
 
     zcant_half_drive = gl.flexure.z_cantilever_half(
@@ -1115,6 +1120,7 @@ def z_clamp() -> gf.Component:
         isolation_x=(0, 0),
         isolation_y=(0, 0),
         spec=Z_CANT_BEAM_SPEC,
+        place=[False, True],
     )
 
     beam1 = gl.flexure.ZCantileverBeam(
@@ -1126,25 +1132,15 @@ def z_clamp() -> gf.Component:
         isolation_x=(0, 0),
         isolation_y=(0, 0),
         spec=Z_CANT_BEAM_SPEC,
+        place=[False, True],
     )
 
-    beam2 = gl.flexure.ZCantileverBeam(
-        length=ZCLAMP_BEAM_LENGTH,
-        width=ZCLAMP_BEAM_WIDTH,
-        position=(-0.5 * ZCLAMP_BEAM_WIDTH, ZCLAMP_BEAM_POS[1]),
-        inset_x=(0, 0),
-        inset_y=(0, 0),
-        isolation_x=(0, 0),
-        isolation_y=(0, 0),
-        spec=Z_CANT_BEAM_SPEC,
-        flip_side=True,
-    )
-
-    zclamp_lever = gl.flexure.z_cantilever_asymm(
+    zclamp_lever = gl.flexure.z_cantilever(
         length=ZCLAMP_LENGTH1,
         width=ZCLAMP_WIDTH,
         beams=[beam0, beam1],
         clearance=ZCANT_CLEARANCE,
+        middle_split=False,
         geometry_layer=LAYERS.DEVICE_P3,
         handle_layer=LAYERS.HANDLE_P0,
         release_spec=Z_CANT_BEAM_SPEC,
@@ -1154,7 +1150,7 @@ def z_clamp() -> gf.Component:
         size=(ZCLAMP_LENGTH2, ZCLAMP_WIDTH), layer=LAYERS.HANDLE_P0, centered=False
     )
 
-    (c << zclamp_lever).move(ZCLAMP_POS)
+    (c << zclamp_lever).move((ZCLAMP_POS[0], ZCLAMP_POS[1] + ZCLAMP_WIDTH / 2))
     (c << zclamp_lever_ext).move((ZCLAMP_POS[0] + ZCLAMP_LENGTH1, ZCLAMP_POS[1]))
 
     anchor2 = gf.Component()
