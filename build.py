@@ -5,7 +5,6 @@ gf.clear_cache()
 
 import gfelib as gl
 
-# import gfebuild as gb
 import sys
 import datetime
 import argparse
@@ -38,17 +37,19 @@ HANDLE_MERGING_ISOLATION = CAVITY_WIDTH
 
 PDK.activate()
 
+import gfebuild as gb
+
 parser = argparse.ArgumentParser(description="Build script for MEGA-2D")
 parser.add_argument(
     "--no-merge",
     action="store_true",
     help="Don't merge the device patterns (e.g. release holes), because it can be very slow. For debug use only, ASML reticle files will not be generated",
 )
-# parser.add_argument(
-#     "--mirror",
-#     action="store_true",
-#     help="Write additional ASML reticle files that are mirrored across x=0 (PLACEMENTS file is not mirrored)",
-# )
+parser.add_argument(
+    "--mirror",
+    action="store_true",
+    help="Write additional ASML reticle files that are mirrored across x=0 (PLACEMENTS file is not mirrored)",
+)
 parser.add_argument(
     "--show",
     action="store_true",
@@ -87,6 +88,8 @@ args = parser.parse_args()
 
 date_str = str(datetime.date.today())
 
+filename_prefix = f"mega_2d_{args.version}_{args.hash[:7]}_{date_str}"
+
 WAFER_DIAMETER = 150000
 # WAFER_ALIGNMENT_MARKS = [
 #     (-40000, 2000),
@@ -105,7 +108,7 @@ CHIP_RECT = gf.components.rectangle(
 
 d = device(ver=f"Ver {args.version}\n{args.hash[:7]}\n{date_str}")
 
-d.write_gds(f"./build/mega_2d_{args.version}_{args.hash[:7]}_{date_str}_SOURCE.gds")
+d.write_gds(f"./build/{filename_prefix}_SOURCE.gds")
 
 c = gf.Component(name="chip")
 
@@ -179,7 +182,7 @@ if not args.no_merge:
             operation="-",
             layer=LAYERS.DUMMY,
             layer1=LAYERS.DUMMY,
-            layer2=LAYERS.DUMMY,
+            layer2=LAYERS.DEVICE,
         ),
         B=d,
         operation="|",
@@ -287,56 +290,50 @@ c.offset(layer=LAYERS.HANDLE_REMOVE, distance=-args.comp_handle)
 
 c.flatten()
 c.write_gds(
-    f"./build/mega_2d_{args.version}_{args.hash[:7]}_{date_str}_BUILD.gds",
+    f"./build/{filename_prefix}_BUILD.gds",
     with_metadata=False,
 )
 
-# if not args.no_merge:
-# generate reticles
-# reticles, placements = gb.asml300.reticle(
-#     component=c,
-#     image_size=(CHIP_SIZE, CHIP_SIZE),
-#     image_layers=[
-#         LAYERS.VIAS_ETCH,
-#         LAYERS.POLY,
-#         LAYERS.OXIDE,
-#         LAYERS.NITRIDE,
-#         LAYERS.DEVICE_REMOVE,
-#         LAYERS.CAP_OXIDE,
-#         LAYERS.CAP_NITRIDE,
-#         LAYERS.CAP_TRENCH_ETCH,
-#     ],
-#     id=f"MPC-{args.version}",
-#     text=date_str,
-# )
+if not args.no_merge:
+    # generate reticles
+    reticles, placements = gb.asml300.reticle(
+        component=c,
+        image_size=(CHIP_SIZE, CHIP_SIZE),
+        image_layers=[
+            LAYERS.VIAS_ETCH,
+            LAYERS.DEVICE_REMOVE,
+        ],
+        id=f"MPC-{args.version}",
+        text=date_str,
+    )
 
-# for i, reticle in enumerate(reticles):
-#     for key, value in placements.items():
-#         if value[0] == i:
-#             _ = reticle << gf.components.text(
-#                 text=str(LAYERS(key)),
-#                 size=0.2 * CHIP_SIZE,
-#                 position=(value[1], value[2]),
-#                 justify="center",
-#                 layer=LAYERS.DUMMY,
-#             )
-#     reticle.flatten()
-#     reticle.write_gds(
-#         f"./build/mega_pc_{args.version}_BUILD_ASML_{i}.gds", with_metadata=False
-#     )
+for i, reticle in enumerate(reticles):
+    for key, value in placements.items():
+        if value[0] == i:
+            _ = reticle << gf.components.text(
+                text=str(LAYERS(key)),
+                size=0.2 * CHIP_SIZE,
+                position=(value[1], value[2]),
+                justify="center",
+                layer=LAYERS.DUMMY,
+            )
+    reticle.flatten()
+    reticle.write_gds(
+        f"./build/{filename_prefix}_RETICLE_ASML_{i}.gds", with_metadata=False
+    )
 
-#     if args.mirror:
-#         reticle.mirror_x(0)
-#         reticle.write_gds(
-#             f"./build/mega_pc_{args.version}_BUILD_ASML_{i}_MIRROR.gds",
-#             with_metadata=False,
-#         )
+    if args.mirror:
+        reticle.mirror_x(0)
+        reticle.write_gds(
+            f"./build/{filename_prefix}_RETICLE_ASML_{i}_MIRROR.gds",
+            with_metadata=False,
+        )
 
-# with open(f"./build/mega_pc_{args.version}_BUILD_ASML_PLACEMENTS.txt", "w") as f:
-#     for key, value in placements.items():
-#         f.write(f"{LAYERS(key)}: {value[0]}, {value[1]:.2f}, {value[2]:.2f}\n")
+with open(f"./build/{filename_prefix}_RETICLE_ASML_PLACEMENTS.txt", "w") as f:
+    for key, value in placements.items():
+        f.write(f"{LAYERS(key)}: {value[0]}, {value[1]:.2f}, {value[2]:.2f}\n")
 
-# # generate wafer masks for backside
+# generate wafer masks for backside
 # for layer in [LAYERS.HANDLE_REMOVE, LAYERS.CAP_BACKSIDE]:
 #     wafer, placements = gb.asml300.wafer(
 #         radius=0.5 * WAFER_DIAMETER,
