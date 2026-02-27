@@ -121,7 +121,7 @@ ZCANT_BEAM_MAIN_WIDTH = 8
 ZCANT_BEAM_MAIN_LENGTH = 80
 
 
-ZCANT_BEAM_DRIVE_WIDTH = 4
+ZCANT_BEAM_DRIVE_WIDTH = 6
 ZCANT_BEAM_DRIVE_LENGTH = 100
 ZCANT_BEAM_DRIVE_FRACTION = 0.8  # Controls lever ratio
 
@@ -210,12 +210,13 @@ ZCLAMP_TEST_STIFFNESS = False  # For validation testing
 
 Z_CANT_BEAM_SPEC = None
 
-ZACTUATOR_SIZE = (900, 1700)
-ZACTUATOR_POS = (1370, 480)
+ZACTUATOR_SIZE = (680, 1100)
+ZACTUATOR_FAT_SIZE = (900, 800)
+ZACTUATOR_POS = (1450, 480)
 ZACTUATOR_ANCHOR_SIZE = (100, 100)
 ZACTUATOR_BEAM_LENGTH = 50
 ZACTUATOR_BEAM_WIDTH = 4
-ZACTUATOR_CONN_WIDTH = 160
+ZACTUATOR_CONN_WIDTH = 180
 
 ZCANT_BEAM_STOPPER_INNER_WIDTH = 75
 ZCANT_BEAM_STOPPER_INNER_INSET = (75, 0)
@@ -1047,14 +1048,38 @@ def z_cant() -> gf.Component:
 def z_actuator() -> gf.Component:
     c = gf.Component()
 
-    z_act = c << gl.basic.rectangle(
-        size=ZACTUATOR_SIZE,
-        geometry_layer=LAYERS.DEVICE_P3,
-        centered=False,
-        release_spec=RELEASE_SPEC,
-    )
+    thin_len = (ZACTUATOR_SIZE[1] - ZACTUATOR_FAT_SIZE[1]) / 2
+    thick_x_off = (ZACTUATOR_FAT_SIZE[0] - ZACTUATOR_SIZE[0]) / 2
 
-    z_act.move(ZACTUATOR_POS)
+    (
+        c
+        << gl.basic.rectangle(
+            size=(ZACTUATOR_SIZE[0], thin_len),
+            geometry_layer=LAYERS.DEVICE_P3,
+            centered=False,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move(ZACTUATOR_POS)
+
+    (
+        c
+        << gl.basic.rectangle(
+            size=ZACTUATOR_FAT_SIZE,
+            geometry_layer=LAYERS.DEVICE_P3,
+            centered=False,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move((ZACTUATOR_POS[0] - thick_x_off, ZACTUATOR_POS[1] + thin_len))
+
+    (
+        c
+        << gl.basic.rectangle(
+            size=(ZACTUATOR_SIZE[0], thin_len),
+            geometry_layer=LAYERS.DEVICE_P3,
+            centered=False,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move((ZACTUATOR_POS[0], ZACTUATOR_POS[1] + thin_len + ZACTUATOR_FAT_SIZE[1]))
 
     z_act_conn = c << gl.basic.rectangle(
         size=(
@@ -1099,6 +1124,22 @@ def z_actuator() -> gf.Component:
 
     (c << anchor3)
     (c << anchor3).mirror_x(ZACTUATOR_SIZE[0] / 2 + ZACTUATOR_POS[0])
+
+    # Connect to bonding pad
+    p1 = (
+        ZACTUATOR_POS[0]
+        + ZACTUATOR_SIZE[0]
+        + ZACTUATOR_BEAM_LENGTH
+        + ZACTUATOR_ANCHOR_SIZE[0] / 2,
+        ZACTUATOR_POS[1] + ZACTUATOR_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+    )
+    p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[4])
+    pmid = (p1[0], p2[1])
+    path = gf.path.smooth(
+        points=np.array([p1, pmid, p2]),
+        radius=ELEC_ROUTING_WIDTH / 2,
+    )
+    (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
 
     return c
 
