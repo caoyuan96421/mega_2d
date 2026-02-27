@@ -1208,6 +1208,8 @@ def z_clamp() -> gf.Component:
 
     (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[0])
     (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1])
+    # Ad hoc fix: Make the second beam anchor taller
+    (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1] + ZCLAMP_ANCHOR_SIZE[0])
     (c << via(LAYERS.DEVICE_P3)).move(
         (
             ZCLAMP_POS[0] + ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1],
