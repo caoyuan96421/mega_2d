@@ -50,14 +50,20 @@ RFLEX_ANCHOR_RADIUS1 = 800
 RFLEX_BEAM_WIDTH = 2.6
 RFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     release_thick=True,
-    thick_length=(0, 0.7),
-    thick_width=(25, 0),
+    thick_length=(0, 0.56),
+    thick_width=(24, 0),
     thick_offset=(0, 0),
+)
+RFLEX_RELEASE_SPEC = gl.datatypes.ReleaseSpec(
+    hole_radius=3.3,
+    distance=6,
+    angle_resolution=18,
+    layer=LAYERS.DEVICE_REMOVE,
 )
 RFLEX_BEAM_ANGLES = [30, 60]
 
 RFLEX_CONN_ANGLE = 0.5 * (90 - RFLEX_BEAM_ANGLES[1])
-RFLEX_PROTECTION_ISOLATION = 42
+RFLEX_PROTECTION_ISOLATION = 38
 
 RDRIVE_INNER_RADIUS = 950
 RDRIVE_MID_RADIUS = 1000
@@ -356,7 +362,7 @@ def r_flexure_full() -> gf.Component:
         geometry_layer=LAYERS.DEVICE_P2,
         angle_resolution=ANGLE_RESOLUTION,
         beam_spec=RFLEX_BEAM_SPEC,
-        release_spec=RELEASE_SPEC,
+        release_spec=RFLEX_RELEASE_SPEC,
     )
 
     # Add beam protection
