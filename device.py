@@ -157,15 +157,15 @@ ZCLAMP_POS = (
     ),
 )
 
-ZCLAMP_PFLEX_BEAM_WIDTH = 4
+ZCLAMP_PFLEX_BEAM_WIDTH = 5
 ZCLAMP_PFLEX_BEAM_LENGTH = 600
 ZCLAMP_PFLEX_BAR_WIDTH = 50
-ZCLAMP_PFLEX_BAR_LENGTH = 550
+ZCLAMP_PFLEX_BAR_LENGTH = 1350
 ZCLAMP_PFLEX_STROKE = 30
-ZCLAMP_PFLEX_BEAM_POS = [0, 0.1, 0.9, 1]
+ZCLAMP_PFLEX_BEAM_POS = [0, 0.05, 0.95, 1]
 ZCLAMP_PFLEX_ANCHOR_SIZE = (100, 100)
 ZCLAMP_PFLEX_POS = (
-    ZCLAMP_POS[0] + ZCLAMP_PFLEX_BEAM_LENGTH + 150,
+    ZCLAMP_POS[0] + ZCLAMP_PFLEX_BEAM_LENGTH + 340,
     ZCLAMP_POS[1]
     - ZCLAMP_PFLEX_BAR_LENGTH / 2
     - CAVITY_WIDTH
@@ -174,24 +174,28 @@ ZCLAMP_PFLEX_POS = (
 ZCLAMP_PFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     release_thick=True,
     thick_length=(0, 0.75),
-    thick_width=(18, 0),
+    thick_width=(25, 0),
     thick_offset=(0, 0),
 )
 ZCLAMP_PECK_OVERLAP = 25  # Controls the nominal overlap between peck and clamp lever
 ZCLAMP_PECK_WIDTH = 60
-ZCLAMP_CARRIAGE_WIDTH = 33
-ZCLAMP_CARRIAGE_SPACING = 30
-ZCLAMP_CARRIAGE_CENTRAL = 40
+ZCLAMP_CARRIAGE_WIDTH = 35
+ZCLAMP_CARRIAGE_SPACING = 50
 
 ZCLAMP_COMB_GAP = 3.5
-ZCLAMP_COMB_COUNT = 110
+ZCLAMP_COMB_COUNT = 80
 ZCLAMP_COMB_WIDTH = 4
 ZCLAMP_COMB_WIDTH_TOTAL = (
     ZCLAMP_COMB_COUNT * ZCLAMP_COMB_GAP + (ZCLAMP_COMB_COUNT + 1) * ZCLAMP_COMB_WIDTH
 )
-ZCLAMP_COMB_HEIGHT = 80
-ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_HEIGHT - 10 - 2 * ZCLAMP_PFLEX_STROKE
+ZCLAMP_COMB_WIDTH = 80
+ZCLAMP_COMB_OVERLAP = ZCLAMP_COMB_WIDTH - 10 - 2 * ZCLAMP_PFLEX_STROKE
 ZCLAMP_COMB_ANCHOR_WIDTH = 30
+
+ZCLAMP_COMB_BANK = 6
+ZCLAMP_COMB_BANK_SPACING = 20
+ZCLAMP_COMB_BANK_COLUMN_LENGTH = ZCLAMP_COMB_WIDTH_TOTAL + ZCLAMP_CARRIAGE_WIDTH
+ZCLAMP_COMB_BANK_COLUMN_WIDTH = 45
 
 ZCLAMP_LOCKER_YPOS = 150
 ZCLAMP_LOCKER_RING_OUTER_RADIUS = 35
@@ -261,9 +265,9 @@ LABEL_VERSION_SIZE = 50
 LABEL_VERSION_YPOS = -130
 
 
-PIC_REGION_SIZE = (500, 500)
-PIC_SIZE = 400
-PIC_POSITION = (2500, -1950)
+PIC_REGION_SIZE = (350, 350)
+PIC_SIZE = 300
+PIC_POSITION = (1950, -2500)
 
 VIA_RADIUS = 20
 VIA_DEVICE_CLEARANCE = 25
@@ -1279,9 +1283,11 @@ def z_clamp() -> gf.Component:
     x2 = -ZCLAMP_PFLEX_BEAM_LENGTH + ZCANT_CLEARANCE
     y2 = y1 - ZCLAMP_CARRIAGE_WIDTH
     x3 = x2 + ZCLAMP_PFLEX_POS[0] + ZCLAMP_CARRIAGE_WIDTH + ZCANT_CLEARANCE
-    y3 = y2 + ZCLAMP_PFLEX_POS[1] - ZCLAMP_COMB_HEIGHT
+    y3 = y2 + ZCLAMP_PFLEX_POS[1] - ZCLAMP_COMB_WIDTH
     y4 = y3 - ZCLAMP_COMB_ANCHOR_WIDTH
     x4 = ZCLAMP_POS[0] + ZCLAMP_LENGTH1 + ZCLAMP_LENGTH2
+    x5 = x2 + ZCLAMP_PFLEX_POS[0] + ZCLAMP_CARRIAGE_WIDTH
+    y5 = y4 - ZCLAMP_COMB_BANK_SPACING - ZCLAMP_COMB_BANK_COLUMN_WIDTH
 
     peck = c << gl.basic.rectangle(
         size=(
@@ -1350,27 +1356,9 @@ def z_clamp() -> gf.Component:
     (c << carriage_half).move(ZCLAMP_PFLEX_POS)
     (c << carriage_half).move(ZCLAMP_PFLEX_POS).mirror_y(ZCLAMP_PFLEX_POS[1])
 
-    central_bar = c << gl.basic.rectangle(
-        size=(
-            x0
-            + ZCLAMP_PECK_WIDTH
-            - ZCLAMP_PFLEX_POS[0]
-            - x2
-            - ZCLAMP_CARRIAGE_WIDTH
-            - ZCLAMP_CARRIAGE_SPACING,
-            ZCLAMP_CARRIAGE_CENTRAL,
-        ),
-        centered=False,
-        geometry_layer=LAYERS.DEVICE_P3,
-        release_spec=RELEASE_SPEC,
-    )
-    central_bar.move((x2 + ZCLAMP_CARRIAGE_WIDTH, -ZCLAMP_CARRIAGE_CENTRAL / 2))
-    central_bar.move(ZCLAMP_PFLEX_POS)
-
-    # Generate combs
-    comb_drive = gf.Component()
-    comb1 = comb_drive << gl.actuator.comb_linear(
-        height=ZCLAMP_COMB_HEIGHT,
+    # Generate comb banks
+    comb = gl.actuator.comb_linear(
+        height=ZCLAMP_COMB_WIDTH,
         width=ZCLAMP_COMB_WIDTH_TOTAL,
         gap=ZCLAMP_COMB_GAP,
         count=ZCLAMP_COMB_COUNT,
@@ -1379,39 +1367,58 @@ def z_clamp() -> gf.Component:
         release_spec_a=None,
         release_spec_b=None,
     )
-    comb1.move((x3, y3))
 
-    (
-        comb_drive
-        << gf.components.rectangle(
-            size=(x4 - x3, ZCLAMP_COMB_ANCHOR_WIDTH),
-            centered=False,
-            layer=LAYERS.DEVICE_P3,
-        )
-    ).move((x3, y4))
+    # Generate the stationary comb bar
+    stor = gf.components.rectangle(
+        size=(x4 - x3, ZCLAMP_COMB_ANCHOR_WIDTH),
+        centered=False,
+        layer=LAYERS.DEVICE_P3,
+    )
 
-    (c << comb_drive)
-    dy = y2 + ZCLAMP_CARRIAGE_CENTRAL / 2
-    (c << comb_drive).movey(-dy)
+    # Generate the moving comb bar
+    mtr = gl.basic.rectangle(
+        size=(
+            ZCLAMP_COMB_BANK_COLUMN_LENGTH,
+            ZCLAMP_COMB_BANK_COLUMN_WIDTH,
+        ),
+        centered=False,
+        geometry_layer=LAYERS.DEVICE_P3,
+        release_spec=RELEASE_SPEC,
+    )
 
+    dy = 0
+    for bank in range(0, ZCLAMP_COMB_BANK):
+        (c << comb).move((x3, y3 + dy))
+        (c << stor).move((x3, y4 + dy))
+        if bank != ZCLAMP_COMB_BANK - 1:
+            (c << mtr).move((x5, y5 + dy))
+
+            dy -= (
+                ZCLAMP_COMB_BANK_COLUMN_WIDTH
+                + ZCLAMP_COMB_ANCHOR_WIDTH
+                + ZCLAMP_COMB_WIDTH
+                + ZCLAMP_COMB_BANK_SPACING
+            )
+
+    # Connect the ends of stator together
     (
         c
         << gf.components.rectangle(
-            size=(ZCLAMP_COMB_ANCHOR_WIDTH, dy + ZCLAMP_COMB_ANCHOR_WIDTH),
+            size=(ZCLAMP_COMB_ANCHOR_WIDTH, -dy + ZCLAMP_COMB_ANCHOR_WIDTH),
             centered=False,
             layer=LAYERS.DEVICE_P3,
         )
-    ).move((x4, y4 - dy))
+    ).move((x4, y4 + dy))
 
     # Connect to bonding pad
-    p1 = (x4, y4 - dy + ZCLAMP_COMB_ANCHOR_WIDTH / 2)
-    p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[0])
-    pmid = (p2[0], p1[1])
-    path = gf.path.smooth(
-        points=np.array([p1, pmid, p2]),
-        radius=ELEC_ROUTING_WIDTH / 2,
-    )
-    (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
+    # p1 = (x4, y4 - dy + ZCLAMP_COMB_ANCHOR_WIDTH / 2)
+    # p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[0])
+    # pmid = (p2[0], p1[1])
+    # path = gf.path.smooth(
+    #     points=np.array([p1, pmid, p2]),
+    #     radius=ELEC_ROUTING_WIDTH / 2,
+    # )
+    # (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
 
     # Generate Locker rachet and release rings
     xr0 = x0 + ZCLAMP_PECK_WIDTH
