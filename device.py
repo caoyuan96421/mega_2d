@@ -965,7 +965,7 @@ def z_cant() -> gf.Component:
         isolation_x=(ZCANT_BEAM_STOPPER_OUTER_WIDTH, 0),
         isolation_y=ZCANT_BEAM_STOPPER_OUTER_INSET,
         spec=gl.datatypes.BeamSpec(release_thin=True),
-        place=[True, False],
+        place=[True, True],
     )
 
     zcantilever = gl.flexure.z_cantilever(
