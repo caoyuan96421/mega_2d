@@ -21,14 +21,14 @@ DEVICE_MIN_ISOLATION = 7
 ELEC_ROUTING_WIDTH = 70
 
 RELEASE_SPEC = gl.datatypes.ReleaseSpec(
-    hole_radius=3.3,
+    hole_radius=3,
     distance=6,
     angle_resolution=18,
     layer=LAYERS.DEVICE_REMOVE,
 )
 
 RELEASE_SPEC_CHIP_BORDER = gl.datatypes.ReleaseSpec(
-    hole_radius=3.3,
+    hole_radius=3,
     distance=8,
     angle_resolution=18,
     layer=LAYERS.DEVICE_REMOVE,
@@ -55,7 +55,7 @@ RFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     thick_offset=(0, 0),
 )
 RFLEX_RELEASE_SPEC = gl.datatypes.ReleaseSpec(
-    hole_radius=3.3,
+    hole_radius=3,
     distance=6,
     angle_resolution=18,
     layer=LAYERS.DEVICE_REMOVE,
@@ -230,10 +230,10 @@ ZACTUATOR_BLOCKS_HEIGHT = [200, 200, 200, 150, 150]
 ZACTUATOR_BLOCKS_SUBDIV = 3
 
 ZACTUATOR_ANCHOR_SIZE = (100, 100)
-ZACTUATOR_BEAM_LENGTH = 50
-ZACTUATOR_BEAM_WIDTH = 4
+ZACTUATOR_ANCHOR_BEAM_LENGTH = 50
+ZACTUATOR_ANCHOR_BEAM_WIDTH = 4
 ZACTUATOR_CONN_POS = 1720
-ZACTUATOR_CONN_WIDTH = 180
+ZACTUATOR_CONN_WIDTH = 170
 
 ZCANT_BEAM_STOPPER_INNER_WIDTH = 75
 ZCANT_BEAM_STOPPER_INNER_INSET = (75, 0)
@@ -258,18 +258,17 @@ WIRE_BOND_OFFSET = 300
 WIRE_BOND_POS = [-1400, -150, 500, 1500, 2400]
 WIRE_BOND_GROUNDED_INDICES = [4]
 
-LABEL_REGION_SIZE = (500, 600)
+LABEL_REGION_SIZE = (500, 560)
 LABEL_TEXT_SIZE = 70
-LABEL_POSITION = (-2500, 1950)
+LABEL_POSITION = (-2500, -1000)
 LABELS = {
-    210: "MEGA-2D",
-    100: "C&T Lab",
-    20: "EECS",
-    -60: "Berkeley",
+    180: "MEGA-2D",
+    70: "C&T Lab",
+    -30: "Berkeley",
 }
 
 LABEL_VERSION_SIZE = 50
-LABEL_VERSION_YPOS = -130
+LABEL_VERSION_YPOS = -100
 
 
 PIC_REGION_SIZE = (350, 350)
@@ -964,7 +963,7 @@ def z_cant() -> gf.Component:
         isolation_x=(ZCANT_BEAM_STOPPER_INNER_WIDTH, 0),
         isolation_y=ZCANT_BEAM_STOPPER_INNER_INSET,
         spec=gl.datatypes.BeamSpec(release_thin=True),
-        place=[True, False],
+        place=[True, True],
     )
 
     beam_stopper_outer = gl.flexure.ZCantileverBeam(
@@ -1142,8 +1141,8 @@ def z_actuator() -> gf.Component:
 
     anchor3 = gf.Component()
     beam = anchor3 << gl.flexure.beam(
-        length=ZACTUATOR_BEAM_LENGTH,
-        width=ZACTUATOR_BEAM_WIDTH,
+        length=ZACTUATOR_ANCHOR_BEAM_LENGTH,
+        width=ZACTUATOR_ANCHOR_BEAM_WIDTH,
         geometry_layer=LAYERS.DEVICE_P3,
         beam_spec=None,
         release_spec=None,
@@ -1153,16 +1152,20 @@ def z_actuator() -> gf.Component:
     )
     beam.move(
         (
-            ZACTUATOR_BASE_POS[0] - ZACTUATOR_BEAM_LENGTH / 2,
-            ZACTUATOR_BASE_POS[1] + ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+            ZACTUATOR_BASE_POS[0] - ZACTUATOR_ANCHOR_BEAM_LENGTH / 2,
+            ZACTUATOR_BASE_POS[1]
+            + ZACTUATOR_BASE_SIZE[1]
+            - ZACTUATOR_ANCHOR_BEAM_WIDTH / 2,
         )
     )
     square.move(
         (
             ZACTUATOR_BASE_POS[0]
-            - ZACTUATOR_BEAM_LENGTH
+            - ZACTUATOR_ANCHOR_BEAM_LENGTH
             - ZACTUATOR_ANCHOR_SIZE[0] / 2,
-            ZACTUATOR_BASE_POS[1] + ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+            ZACTUATOR_BASE_POS[1]
+            + ZACTUATOR_BASE_SIZE[1]
+            - ZACTUATOR_ANCHOR_BEAM_WIDTH / 2,
         )
     )
 
@@ -1254,6 +1257,12 @@ def z_clamp() -> gf.Component:
     (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1])
     # Ad hoc fix: Make the second beam anchor taller
     (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1] + ZCLAMP_ANCHOR_SIZE[0])
+    # Symmetrical to the other side of zcant
+    (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1]).mirror_y()
+    # Ad hoc fix: Make the second beam anchor taller
+    (c << anchor2).movex(
+        ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1] + ZCLAMP_ANCHOR_SIZE[0]
+    ).mirror_y()
     (c << via(LAYERS.DEVICE_P3)).move(
         (
             ZCLAMP_POS[0] + ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1],
@@ -1269,6 +1278,15 @@ def z_clamp() -> gf.Component:
             ZCLAMP_POS[1] + ZCLAMP_WIDTH / 2,
         )
     )
+    (c << via(LAYERS.DEVICE_P3)).move(
+        (
+            ZCLAMP_POS[0] + ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1],
+            ZCLAMP_POS[1]
+            + ZCLAMP_WIDTH
+            + ZCLAMP_BEAM_LENGTH
+            + ZCLAMP_ANCHOR_SIZE[1] / 2,
+        )
+    ).mirror_y()
     # (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1]).movey(
     #     -ZCLAMP_ANCHOR_SIZE[1] - 2 * ZCLAMP_BEAM_LENGTH - ZCLAMP_WIDTH
     # )
@@ -1443,6 +1461,15 @@ def z_clamp() -> gf.Component:
             layer=LAYERS.DEVICE_P3,
         )
     ).move((x4, y4 + dy))
+
+    # Calculate total electrostatic drive force
+
+    n_cap = ZCLAMP_COMB_BANK * ZCLAMP_COMB_COUNT * 2
+
+    eforce = 0.5 * 8.85e-12 * (100) ** 2 * (60) * n_cap / ZCLAMP_COMB_GAP
+    print(
+        f"Max electrostatic force per lock @ 100V is {1E6 * eforce} micronewton (dev thick=60um)"
+    )
 
     # Connect to bonding pad
     # p1 = (x4, y4 - dy + ZCLAMP_COMB_ANCHOR_WIDTH / 2)
