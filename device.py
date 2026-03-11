@@ -220,12 +220,19 @@ ZCLAMP_TEST_STIFFNESS = False  # For validation testing
 
 Z_CANT_BEAM_SPEC = None
 
-ZACTUATOR_SIZE = (680, 1100)
-ZACTUATOR_FAT_SIZE = (900, 800)
-ZACTUATOR_POS = (1450, 480)
+ZACTUATOR_BASE_SIZE = (1400, 300)
+# ZACTUATOR_FAT_SIZE = (900, 800)
+ZACTUATOR_BASE_POS = (850, 1350)
+
+ZACTUATOR_BLOCKS_OFFSET = [150, 150, 150, 150, 150]
+ZACTUATOR_BLOCKS_LENGTH = [1200, 1000, 800, 600, 400]
+ZACTUATOR_BLOCKS_HEIGHT = [200, 200, 200, 150, 150]
+ZACTUATOR_BLOCKS_SUBDIV = 3
+
 ZACTUATOR_ANCHOR_SIZE = (100, 100)
 ZACTUATOR_BEAM_LENGTH = 50
 ZACTUATOR_BEAM_WIDTH = 4
+ZACTUATOR_CONN_POS = 1720
 ZACTUATOR_CONN_WIDTH = 180
 
 ZCANT_BEAM_STOPPER_INNER_WIDTH = 75
@@ -249,7 +256,7 @@ ZCANT_BEAM_STOPPER_OUTER_POS = (ZCANT_BEAM_STOPPER_OUTER_WIDTH / 2, 0.6)
 WIRE_BOND_SIZE = 400
 WIRE_BOND_OFFSET = 300
 WIRE_BOND_POS = [-1400, -150, 500, 1500, 2400]
-WIRE_BOND_GROUNDED_INDICES = [3]
+WIRE_BOND_GROUNDED_INDICES = [4]
 
 LABEL_REGION_SIZE = (500, 600)
 LABEL_TEXT_SIZE = 70
@@ -1058,43 +1065,68 @@ def z_cant() -> gf.Component:
 def z_actuator() -> gf.Component:
     c = gf.Component()
 
-    thin_len = (ZACTUATOR_SIZE[1] - ZACTUATOR_FAT_SIZE[1]) / 2
-    thick_x_off = (ZACTUATOR_FAT_SIZE[0] - ZACTUATOR_SIZE[0]) / 2
+    # thin_len = (ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_FAT_SIZE[1]) / 2
+    # thick_x_off = (ZACTUATOR_FAT_SIZE[0] - ZACTUATOR_BASE_SIZE[0]) / 2
 
     (
         c
         << gl.basic.rectangle(
-            size=(ZACTUATOR_SIZE[0], thin_len),
+            size=ZACTUATOR_BASE_SIZE,
             geometry_layer=LAYERS.DEVICE_P3,
             centered=False,
             release_spec=RELEASE_SPEC,
         )
-    ).move(ZACTUATOR_POS)
+    ).move(ZACTUATOR_BASE_POS)
 
-    (
-        c
-        << gl.basic.rectangle(
-            size=ZACTUATOR_FAT_SIZE,
-            geometry_layer=LAYERS.DEVICE_P3,
-            centered=False,
-            release_spec=RELEASE_SPEC,
-        )
-    ).move((ZACTUATOR_POS[0] - thick_x_off, ZACTUATOR_POS[1] + thin_len))
+    x, y = ZACTUATOR_BASE_POS
+    last_len = ZACTUATOR_BASE_SIZE[0]
 
-    (
-        c
-        << gl.basic.rectangle(
-            size=(ZACTUATOR_SIZE[0], thin_len),
-            geometry_layer=LAYERS.DEVICE_P3,
-            centered=False,
-            release_spec=RELEASE_SPEC,
-        )
-    ).move((ZACTUATOR_POS[0], ZACTUATOR_POS[1] + thin_len + ZACTUATOR_FAT_SIZE[1]))
+    for i in range(0, len(ZACTUATOR_BLOCKS_OFFSET)):
+        for s in range(0, ZACTUATOR_BLOCKS_SUBDIV):
+            x += ZACTUATOR_BLOCKS_OFFSET[i] / ZACTUATOR_BLOCKS_SUBDIV
+            y -= ZACTUATOR_BLOCKS_HEIGHT[i] / ZACTUATOR_BLOCKS_SUBDIV
+            block_length = last_len + (s + 1) / ZACTUATOR_BLOCKS_SUBDIV * (
+                ZACTUATOR_BLOCKS_LENGTH[i] - last_len
+            )
+            (
+                c
+                << gl.basic.rectangle(
+                    size=(
+                        block_length,
+                        ZACTUATOR_BLOCKS_HEIGHT[i] / ZACTUATOR_BLOCKS_SUBDIV,
+                    ),
+                    geometry_layer=LAYERS.DEVICE_P3,
+                    centered=False,
+                    release_spec=RELEASE_SPEC,
+                )
+            ).move((x, y))
+
+        last_len = ZACTUATOR_BLOCKS_LENGTH[i]
+
+    # (
+    #     c
+    #     << gl.basic.rectangle(
+    #         size=ZACTUATOR_FAT_SIZE,
+    #         geometry_layer=LAYERS.DEVICE_P3,
+    #         centered=False,
+    #         release_spec=RELEASE_SPEC,
+    #     )
+    # ).move((ZACTUATOR_BASE_POS[0] - thick_x_off, ZACTUATOR_BASE_POS[1] + thin_len))
+
+    # (
+    #     c
+    #     << gl.basic.rectangle(
+    #         size=(ZACTUATOR_BASE_SIZE[0], thin_len),
+    #         geometry_layer=LAYERS.DEVICE_P3,
+    #         centered=False,
+    #         release_spec=RELEASE_SPEC,
+    #     )
+    # ).move((ZACTUATOR_BASE_POS[0], ZACTUATOR_BASE_POS[1] + thin_len + ZACTUATOR_FAT_SIZE[1]))
 
     z_act_conn = c << gl.basic.rectangle(
         size=(
             ZACTUATOR_CONN_WIDTH,
-            ZACTUATOR_POS[1] - ZCANT_WIDTH / 2 - ZCANT_BEAM_DRIVE_LENGTH,
+            y - (ZCANT_WIDTH / 2 + ZCANT_BEAM_DRIVE_LENGTH),
         ),
         geometry_layer=LAYERS.DEVICE_P3,
         centered=False,
@@ -1103,7 +1135,7 @@ def z_actuator() -> gf.Component:
 
     z_act_conn.move(
         (
-            ZACTUATOR_POS[0] + (ZACTUATOR_SIZE[0] - ZACTUATOR_CONN_WIDTH) / 2,
+            ZACTUATOR_CONN_POS,
             ZCANT_WIDTH / 2 + ZCANT_BEAM_DRIVE_LENGTH,
         )
     )
@@ -1121,35 +1153,37 @@ def z_actuator() -> gf.Component:
     )
     beam.move(
         (
-            ZACTUATOR_POS[0] - ZACTUATOR_BEAM_LENGTH / 2,
-            ZACTUATOR_POS[1] + ZACTUATOR_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+            ZACTUATOR_BASE_POS[0] - ZACTUATOR_BEAM_LENGTH / 2,
+            ZACTUATOR_BASE_POS[1] + ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
         )
     )
     square.move(
         (
-            ZACTUATOR_POS[0] - ZACTUATOR_BEAM_LENGTH - ZACTUATOR_ANCHOR_SIZE[0] / 2,
-            ZACTUATOR_POS[1] + ZACTUATOR_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+            ZACTUATOR_BASE_POS[0]
+            - ZACTUATOR_BEAM_LENGTH
+            - ZACTUATOR_ANCHOR_SIZE[0] / 2,
+            ZACTUATOR_BASE_POS[1] + ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
         )
     )
 
     (c << anchor3)
-    (c << anchor3).mirror_x(ZACTUATOR_SIZE[0] / 2 + ZACTUATOR_POS[0])
+    (c << anchor3).mirror_x(ZACTUATOR_BASE_SIZE[0] / 2 + ZACTUATOR_BASE_POS[0])
 
     # Connect to bonding pad
-    p1 = (
-        ZACTUATOR_POS[0]
-        + ZACTUATOR_SIZE[0]
-        + ZACTUATOR_BEAM_LENGTH
-        + ZACTUATOR_ANCHOR_SIZE[0] / 2,
-        ZACTUATOR_POS[1] + ZACTUATOR_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
-    )
-    p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[3])
-    pmid = (p1[0], p2[1])
-    path = gf.path.smooth(
-        points=np.array([p1, pmid, p2]),
-        radius=ELEC_ROUTING_WIDTH / 2,
-    )
-    (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
+    # p1 = (
+    #     ZACTUATOR_BASE_POS[0]
+    #     + ZACTUATOR_BASE_SIZE[0]
+    #     + ZACTUATOR_BEAM_LENGTH
+    #     + ZACTUATOR_ANCHOR_SIZE[0] / 2,
+    #     ZACTUATOR_BASE_POS[1] + ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_BEAM_WIDTH / 2,
+    # )
+    # p2 = (CHIP_SIZE / 2 - WIRE_BOND_OFFSET - WIRE_BOND_SIZE / 2, WIRE_BOND_POS[3])
+    # pmid = (p1[0], p2[1])
+    # path = gf.path.smooth(
+    #     points=np.array([p1, pmid, p2]),
+    #     radius=ELEC_ROUTING_WIDTH / 2,
+    # )
+    # (c << path.extrude(layer=LAYERS.DEVICE_P3_NOISO, width=ELEC_ROUTING_WIDTH))
 
     return c
 
