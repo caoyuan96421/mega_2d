@@ -1,4 +1,5 @@
 import gdsfactory as gf
+import klayout.db
 import gfelib as gl
 import klayout
 
@@ -224,6 +225,7 @@ ZACTUATOR_BASE_SIZE = (1400, 300)
 # ZACTUATOR_FAT_SIZE = (900, 800)
 ZACTUATOR_BASE_POS = (850, 1350)
 
+
 ZACTUATOR_BLOCKS_OFFSET = [150, 150, 150, 150, 150]
 ZACTUATOR_BLOCKS_LENGTH = [1200, 1000, 800, 600, 400]
 ZACTUATOR_BLOCKS_HEIGHT = [200, 200, 200, 150, 150]
@@ -232,6 +234,10 @@ ZACTUATOR_BLOCKS_SUBDIV = 3
 ZACTUATOR_ANCHOR_SIZE = (100, 100)
 ZACTUATOR_ANCHOR_BEAM_LENGTH = 50
 ZACTUATOR_ANCHOR_BEAM_WIDTH = 4
+ZACTUATOR_MIDDLE_ANCHOR_BEAM_LENGTH = 50
+ZACTUATOR_MIDDLE_ANCHOR_BEAM_WIDTH = 4
+ZACTUATOR_MIDDLE_ANCHOR_SIZE = (150, 100)
+
 ZACTUATOR_CONN_POS = 1720
 ZACTUATOR_CONN_WIDTH = 170
 
@@ -252,7 +258,7 @@ ZCANT_BEAM_STOPPER_OUTER_INSET = (0, 0.4)
 ZCANT_BEAM_STOPPER_OUTER_LENGTH = CAVITY_WIDTH + 40
 ZCANT_BEAM_STOPPER_OUTER_POS = (
     ZCANT_BEAM_STOPPER_OUTER_WIDTH / 2,
-    0.54,  # This number controls the Z-stopper position
+    0.5,  # This number controls the Z-stopper position
 )
 
 
@@ -1070,15 +1076,49 @@ def z_actuator() -> gf.Component:
     # thin_len = (ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_FAT_SIZE[1]) / 2
     # thick_x_off = (ZACTUATOR_FAT_SIZE[0] - ZACTUATOR_BASE_SIZE[0]) / 2
 
+    size1 = (
+        (
+            ZACTUATOR_BASE_SIZE[0]
+            - ZACTUATOR_MIDDLE_ANCHOR_SIZE[0]
+            - ZACTUATOR_MIDDLE_ANCHOR_BEAM_LENGTH * 2
+        )
+        / 2,
+        ZACTUATOR_BASE_SIZE[1],
+    )
+    size2 = (
+        (ZACTUATOR_BASE_SIZE[0] - 2 * size1[0]),
+        ZACTUATOR_BASE_SIZE[1] - 0.5 * ZACTUATOR_MIDDLE_ANCHOR_SIZE[1] - 10,
+    )
+
     (
         c
         << gl.basic.rectangle(
-            size=ZACTUATOR_BASE_SIZE,
+            size=size1,
             geometry_layer=LAYERS.DEVICE_P3,
             centered=False,
             release_spec=RELEASE_SPEC,
         )
     ).move(ZACTUATOR_BASE_POS)
+
+    (
+        c
+        << gl.basic.rectangle(
+            size=size2,
+            geometry_layer=LAYERS.DEVICE_P3,
+            centered=False,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move(ZACTUATOR_BASE_POS).movex(size1[0])
+
+    (
+        c
+        << gl.basic.rectangle(
+            size=size1,
+            geometry_layer=LAYERS.DEVICE_P3,
+            centered=False,
+            release_spec=RELEASE_SPEC,
+        )
+    ).move(ZACTUATOR_BASE_POS).movex(size1[0] + size2[0])
 
     x, y = ZACTUATOR_BASE_POS
     last_len = ZACTUATOR_BASE_SIZE[0]
@@ -1095,7 +1135,7 @@ def z_actuator() -> gf.Component:
                 << gl.basic.rectangle(
                     size=(
                         block_length,
-                        ZACTUATOR_BLOCKS_HEIGHT[i] / ZACTUATOR_BLOCKS_SUBDIV,
+                        ZACTUATOR_BLOCKS_HEIGHT[i] / ZACTUATOR_BLOCKS_SUBDIV + 0.001,
                     ),
                     geometry_layer=LAYERS.DEVICE_P3,
                     centered=False,
@@ -1142,6 +1182,26 @@ def z_actuator() -> gf.Component:
         )
     )
 
+    xbeam = ZACTUATOR_BASE_POS[0] - ZACTUATOR_ANCHOR_BEAM_LENGTH / 2
+    xanchor = (
+        ZACTUATOR_BASE_POS[0]
+        - ZACTUATOR_ANCHOR_BEAM_LENGTH
+        - ZACTUATOR_ANCHOR_SIZE[0] / 2
+    )
+    xmidbeam1 = (
+        ZACTUATOR_BASE_POS[0] + size1[0] + ZACTUATOR_MIDDLE_ANCHOR_BEAM_LENGTH / 2
+    )
+
+    xmidbeam2 = (
+        ZACTUATOR_BASE_POS[0]
+        + size1[0]
+        + size2[0]
+        - ZACTUATOR_MIDDLE_ANCHOR_BEAM_LENGTH / 2
+    )
+
+    xmid = ZACTUATOR_BASE_POS[0] + size1[0] + 0.5 * size2[0]
+    y = ZACTUATOR_BASE_POS[1] + ZACTUATOR_BASE_SIZE[1] - ZACTUATOR_ANCHOR_BEAM_WIDTH / 2
+
     anchor3 = gf.Component()
     beam = anchor3 << gl.flexure.beam(
         length=ZACTUATOR_ANCHOR_BEAM_LENGTH,
@@ -1153,27 +1213,26 @@ def z_actuator() -> gf.Component:
     square = anchor3 << gf.components.rectangle(
         size=ZACTUATOR_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=True
     )
-    beam.move(
-        (
-            ZACTUATOR_BASE_POS[0] - ZACTUATOR_ANCHOR_BEAM_LENGTH / 2,
-            ZACTUATOR_BASE_POS[1]
-            + ZACTUATOR_BASE_SIZE[1]
-            - ZACTUATOR_ANCHOR_BEAM_WIDTH / 2,
-        )
-    )
-    square.move(
-        (
-            ZACTUATOR_BASE_POS[0]
-            - ZACTUATOR_ANCHOR_BEAM_LENGTH
-            - ZACTUATOR_ANCHOR_SIZE[0] / 2,
-            ZACTUATOR_BASE_POS[1]
-            + ZACTUATOR_BASE_SIZE[1]
-            - ZACTUATOR_ANCHOR_BEAM_WIDTH / 2,
-        )
-    )
+    beam.move((xbeam, y))
+    square.move((xanchor, y))
 
     (c << anchor3)
-    (c << anchor3).mirror_x(ZACTUATOR_BASE_SIZE[0] / 2 + ZACTUATOR_BASE_POS[0])
+    (c << anchor3).mirror_x(xmid)
+
+    # Generate middle anchor
+    beam2 = gl.flexure.beam(
+        length=ZACTUATOR_MIDDLE_ANCHOR_BEAM_LENGTH,
+        width=ZACTUATOR_MIDDLE_ANCHOR_BEAM_WIDTH,
+        geometry_layer=LAYERS.DEVICE_P3,
+        beam_spec=None,
+        release_spec=None,
+    )
+    anc4 = gf.components.rectangle(
+        size=ZACTUATOR_MIDDLE_ANCHOR_SIZE, layer=LAYERS.DEVICE_P3, centered=True
+    )
+    (c << beam2).move((xmidbeam1, y))
+    (c << beam2).move((xmidbeam2, y))
+    (c << anc4).move((xmid, y))
 
     # Connect to bonding pad
     # p1 = (
