@@ -158,7 +158,7 @@ ZCLAMP_POS = (
     ),
 )
 
-ZCLAMP_PFLEX_BEAM_WIDTH = 6
+ZCLAMP_PFLEX_BEAM_WIDTH = 5
 ZCLAMP_PFLEX_BEAM_LENGTH = 600
 ZCLAMP_PFLEX_BAR_WIDTH = 50
 ZCLAMP_PFLEX_BAR_LENGTH = 1420
@@ -174,7 +174,7 @@ ZCLAMP_PFLEX_POS = (
 )
 ZCLAMP_PFLEX_BEAM_SPEC = gl.datatypes.BeamSpec(
     release_thick=True,
-    thick_length=(0, 0.75),
+    thick_length=(0, 0.8),
     thick_width=(25, 0),
     thick_offset=(0, 0),
 )
