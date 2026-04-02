@@ -144,6 +144,10 @@ ZCLAMP_BEAM_LENGTH = 100
 ZCLAMP_ANCHOR_SIZE = (100, 100)
 ZCLAMP_BEAM_POS = [0, 1]
 
+ZCLAMP_SAFETY_STOPPER_POS = 450
+ZCLAMP_SAFETY_STOPPER_WIDTH = 100
+ZCLAMP_SAFETY_STOPPER_LENGTH = 180
+
 ZCLAMP_POS = (
     ZCANT_POSITION
     - ZCANT_ANCHOR_SIZE[0] / 2
@@ -163,6 +167,7 @@ ZCLAMP_PFLEX_BEAM_LENGTH = 600
 ZCLAMP_PFLEX_BAR_WIDTH = 50
 ZCLAMP_PFLEX_BAR_LENGTH = 1420
 ZCLAMP_PFLEX_STROKE = 35
+ZCLAMP_PFLEX_STROKE_REV = 10
 ZCLAMP_PFLEX_BEAM_POS = [0, 0.05, 0.95, 1]
 ZCLAMP_PFLEX_ANCHOR_SIZE = (100, 100)
 ZCLAMP_PFLEX_POS = (
@@ -182,6 +187,9 @@ ZCLAMP_PECK_OVERLAP = 25  # Controls the nominal overlap between peck and clamp 
 ZCLAMP_PECK_WIDTH = 60
 ZCLAMP_CARRIAGE_WIDTH = 50
 ZCLAMP_CARRIAGE_SPACING = 50
+
+ZCLAMP_BUMP_RADIUS = 4
+ZCLAMP_BUMP_NUMBER = 5
 
 ZCLAMP_COMB_GAP = 3.5
 ZCLAMP_COMB_COUNT = 85
@@ -1301,8 +1309,36 @@ def z_clamp() -> gf.Component:
         size=(ZCLAMP_LENGTH2, ZCLAMP_WIDTH), layer=LAYERS.HANDLE_P0, centered=False
     )
 
+    zclamp_safety_stopper1 = gf.components.rectangle(
+        size=(ZCLAMP_SAFETY_STOPPER_LENGTH, ZCLAMP_WIDTH),
+        layer=LAYERS.DEVICE_P3,
+        centered=False,
+    )
+
+    zclamp_safety_stopper2 = gl.basic.rectangle(
+        size=(ZCLAMP_SAFETY_STOPPER_LENGTH, ZCLAMP_SAFETY_STOPPER_WIDTH),
+        geometry_layer=LAYERS.DEVICE_P3,
+        centered=False,
+        release_spec=RELEASE_SPEC,
+    )
+
     (c << zclamp_lever).move((ZCLAMP_POS[0], ZCLAMP_POS[1] + ZCLAMP_WIDTH / 2))
     (c << zclamp_lever_ext).move((ZCLAMP_POS[0] + ZCLAMP_LENGTH1, ZCLAMP_POS[1]))
+    (c << zclamp_safety_stopper1).move(
+        (ZCLAMP_POS[0] + ZCLAMP_SAFETY_STOPPER_POS, ZCLAMP_POS[1])
+    )
+    (c << zclamp_safety_stopper2).move(
+        (
+            ZCLAMP_POS[0] + ZCLAMP_SAFETY_STOPPER_POS,
+            ZCLAMP_POS[1] - ZCLAMP_SAFETY_STOPPER_WIDTH,
+        )
+    )
+    (c << zclamp_safety_stopper2).move(
+        (
+            ZCLAMP_POS[0] + ZCLAMP_SAFETY_STOPPER_POS,
+            ZCLAMP_POS[1] + ZCLAMP_WIDTH,
+        )
+    )
 
     anchor2 = gf.Component()
     anchor2 << gf.components.rectangle(
@@ -1317,6 +1353,21 @@ def z_clamp() -> gf.Component:
             + ZCLAMP_ANCHOR_SIZE[1] / 2,
         )
     )
+
+    # zclamp_safety_stopper3 = gl.basic.rectangle(
+    #     size=(ZCLAMP_ANCHOR_SIZE[0], ZCLAMP_BEAM_LENGTH + ZCLAMP_WIDTH),
+    #     geometry_layer=LAYERS.DEVICE_P3,
+    #     centered=False,
+    #     release_spec=RELEASE_SPEC,
+    # )
+    # (c << zclamp_safety_stopper3).move(
+    #     (
+    #         ZCLAMP_POS[0]
+    #         + ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1]
+    #         + ZCLAMP_ANCHOR_SIZE[0] * 0.5,
+    #         ZCLAMP_POS[1],
+    #     )
+    # )
 
     (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[0])
     (c << anchor2).movex(ZCLAMP_LENGTH1 * ZCLAMP_BEAM_POS[1])
@@ -1442,6 +1493,7 @@ def z_clamp() -> gf.Component:
                 ZCLAMP_PFLEX_BAR_LENGTH / 2
                 - ZCLAMP_PFLEX_BEAM_WIDTH
                 - ZCLAMP_PFLEX_STROKE
+                - ZCLAMP_BUMP_RADIUS
                 - y1,
             ),
             centered=False,
@@ -1449,6 +1501,25 @@ def z_clamp() -> gf.Component:
             release_spec=RELEASE_SPEC,
         )
     ).movey(y1)
+
+    xbump = ZCLAMP_BUMP_RADIUS
+    ybump = (
+        ZCLAMP_PFLEX_BAR_LENGTH / 2
+        - ZCLAMP_PFLEX_BEAM_WIDTH
+        - ZCLAMP_PFLEX_STROKE
+        - ZCLAMP_BUMP_RADIUS
+    )
+    bump_spacing = (
+        ZCLAMP_CARRIAGE_WIDTH - 2 * ZCLAMP_BUMP_NUMBER * ZCLAMP_BUMP_RADIUS
+    ) / (ZCLAMP_BUMP_NUMBER - 1)
+    for i in range(0, ZCLAMP_BUMP_NUMBER):
+        (
+            carriage_half
+            << gf.components.circle(
+                ZCLAMP_BUMP_RADIUS, ANGLE_RESOLUTION, layer=LAYERS.DEVICE_P3
+            )
+        ).move((xbump, ybump))
+        xbump += 2 * ZCLAMP_BUMP_RADIUS + bump_spacing
 
     (
         carriage_half
@@ -1472,6 +1543,25 @@ def z_clamp() -> gf.Component:
 
     (c << carriage_half).move(ZCLAMP_PFLEX_POS)
     (c << carriage_half).move(ZCLAMP_PFLEX_POS).mirror_y(ZCLAMP_PFLEX_POS[1])
+
+    # Fixup: small stopper to prevent carriage move in opposite position by more than ZCLAMP_PFLEX_STROKE_REV
+    (
+        c
+        << gf.components.rectangle(
+            size=(ZCLAMP_CARRIAGE_WIDTH, ZCLAMP_PFLEX_STROKE - ZCLAMP_PFLEX_STROKE_REV),
+            layer=LAYERS.DEVICE_P3,
+            centered=False,
+        )
+    ).move(
+        (
+            ZCLAMP_PFLEX_POS[0],
+            ZCLAMP_PFLEX_POS[1]
+            + ZCLAMP_PFLEX_BAR_LENGTH / 2
+            - ZCLAMP_PFLEX_BEAM_WIDTH
+            - ZCLAMP_PFLEX_STROKE
+            + ZCLAMP_PFLEX_STROKE_REV,
+        )
+    )
 
     # Generate comb banks
     comb = gl.actuator.comb_linear(
@@ -1726,9 +1816,23 @@ def z_clamp() -> gf.Component:
         )
     ).move((xr4, yr4))
 
+    xbump = xr4
+    ybump = yr4
+    bump_spacing = (
+        ZCLAMP_PECK_STOPPER_SIZE[0] - 2 * ZCLAMP_BUMP_NUMBER * ZCLAMP_BUMP_RADIUS
+    ) / (ZCLAMP_BUMP_NUMBER - 1)
+    for i in range(0, ZCLAMP_BUMP_NUMBER):
+        (
+            c
+            << gf.components.circle(
+                ZCLAMP_BUMP_RADIUS, ANGLE_RESOLUTION, layer=LAYERS.DEVICE_P3
+            )
+        ).move((xbump, ybump))
+        xbump += 2 * ZCLAMP_BUMP_RADIUS + bump_spacing
+
     (xr5, yr5) = (
         xr0 + ZCLAMP_LOCKER_STOPPER_CLEARANCE,
-        yr4 - ZCLAMP_PECK_STOPPER_SIZE[1] - ZCLAMP_PFLEX_STROKE,
+        yr4 - ZCLAMP_PECK_STOPPER_SIZE[1] - ZCLAMP_PFLEX_STROKE - ZCLAMP_BUMP_RADIUS,
     )
     (
         c
